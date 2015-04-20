@@ -29,7 +29,8 @@ public class OWLOntologyCleaner {
         String ontologyFileName = "ontology_files/ONTOTOXNUC.owl";
         OWLOntologyCleaner ontology = new OWLOntologyCleaner(ontologyFileName);
 
-        ontology.printLabels();
+        //ontology.printLabels();
+        ontology.outputOntology();
     }
 
     public void printLabels() {
@@ -48,6 +49,12 @@ public class OWLOntologyCleaner {
                     }
                 }
             }
+        }
+    }
+
+    public void outputOntology() {
+        for (OWLOntology onto : manager.getOntologies()) {
+            System.out.println(onto);
         }
     }
 
