@@ -22,8 +22,8 @@ public class OWLOntologyCleaner {
     private OWLOntology ontology;
     private OWLOntology cleanedOntology;
 
-    public OWLOntologyCleaner(String ontologyFileName) {
-        File ontologyFile = new File(ontologyFileName);
+    public OWLOntologyCleaner(File ontologyFile) {
+        //File ontologyFile = new File(ontologyFileName);
         try {
             //Load ontology from file
             ontology = manager.loadOntologyFromOntologyDocument(ontologyFile);
@@ -34,13 +34,21 @@ public class OWLOntologyCleaner {
 
     public static void main(String [ ] args) throws OWLOntologyCreationException {
         //String ontologyFileName = "ontology_files/ONTOTOXNUC.owl";
-        String ontologyFileName = "ontology_files/TOP-MENELAS.owl";
-        OWLOntologyCleaner oc = new OWLOntologyCleaner(ontologyFileName);
+        String dirPath = "ontology_files/cmo/";
 
-        oc.cleanMultilingualOntology("fr");
+        File dir = new File(dirPath);
+        File[] directoryListing = dir.listFiles();
+        if (directoryListing != null) {
+            for (File ontologyFile : directoryListing) {
+                OWLOntologyCleaner oc = new OWLOntologyCleaner(ontologyFile);
 
-        //oc.printLabels();
-        oc.outputOntology();
+                oc.cleanMultilingualOntology("fr");
+
+                //oc.printLabels();
+                oc.outputOntology(ontologyFile.getName());
+                System.out.println(ontologyFile.getName() + " : DONE");
+            }
+        }
     }
 
     public void printLabels() {
@@ -61,8 +69,8 @@ public class OWLOntologyCleaner {
         }
     }
 
-    public void outputOntology() {
-        File outputFile = new File("ontology_files/cleaned.owl");
+    public void outputOntology(String outputFilename) {
+        File outputFile = new File("ontology_files/lso/" + outputFilename);
         RDFXMLDocumentFormat rdfxmlFormat = new RDFXMLDocumentFormat();
         try {
             manager.saveOntology(ontology, rdfxmlFormat, IRI.create(outputFile.toURI()));
