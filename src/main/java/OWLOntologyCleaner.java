@@ -2,9 +2,12 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 import com.hp.hpl.jena.reasoner.rulesys.builtins.Remove;
+import org.apache.commons.lang3.StringUtils;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.formats.RDFXMLDocumentFormat;
 import org.semanticweb.owlapi.model.*;
@@ -38,9 +41,13 @@ public class OWLOntologyCleaner {
 
         File dir = new File(dirPath);
         File[] directoryListing = dir.listFiles();
+        // Go through ontology files in the directory
         if (directoryListing != null) {
             for (File ontologyFile : directoryListing) {
                 OWLOntologyCleaner oc = new OWLOntologyCleaner(ontologyFile);
+                if (ontologyFile.getName().equals("ONTOPNEUMO.owl")) {
+                    oc.cleanOntopneumoOntology();
+                }
 
                 oc.cleanMultilingualOntology("fr");
 
@@ -70,6 +77,8 @@ public class OWLOntologyCleaner {
     }
 
     public void outputOntology(String outputFilename) {
+        // Save the ontology in a file in ontology_files
+
         File outputFile = new File("ontology_files/lso/" + outputFilename);
         RDFXMLDocumentFormat rdfxmlFormat = new RDFXMLDocumentFormat();
         try {
@@ -77,6 +86,58 @@ public class OWLOntologyCleaner {
         } catch (OWLOntologyStorageException e) {
             e.printStackTrace();
         }
+    }
+
+    public void cleanOntopneumoOntology() {
+        // A method to clean the very special case of ONTOPNEUMO
+
+        String badLabel = "";
+        String goodLabel = "";
+        OWLAnnotationProperty prefLabelProperty = df.getOWLAnnotationProperty(IRI.create("http://www.w3.org/2004/02/skos/core#prefLabel"));
+
+        for (OWLClass cls : ontology.getClassesInSignature()) {
+            boolean onlyHidden = true;
+
+            // Go through all annotations of the class, if it gets only a skos:hiddenLabel, then it separates the word at
+            // each capital letter.
+            for (OWLAnnotationAssertionAxiom annAx : EntitySearcher.getAnnotationAssertionAxioms(cls.getIRI(), ontology)) {
+                if (annAx.getProperty().toString().equals("<http://www.w3.org/2004/02/skos/core#hiddenLabel>")) {
+                    // Extracting only the literal value (without @lang)
+                    Pattern pattern = Pattern.compile("\"(.*?)\"");
+                    Matcher matcher = pattern.matcher(annAx.getValue().toString());
+                    if (matcher.find())
+                    {
+                        badLabel = matcher.group(1);
+                    }
+                } else {
+                    onlyHidden = false;
+                }
+            }
+            if (onlyHidden == true) {
+                // If there is only a skos:hiddenLabel property we split the string at each capital letter
+                // (except if the whole string is in capital) and put it in a skos:prefLabel property
+
+                if (!StringUtils.isAllUpperCase(badLabel)) {
+                    String[] arrayLabel = badLabel.split("(?=[A-Z])");
+                    StringBuilder builder = new StringBuilder();
+                    for (String s : arrayLabel) {
+                        builder.append(s + " ");
+                    }
+                    goodLabel = builder.toString().trim().toLowerCase();
+                } else {
+                    goodLabel = badLabel;
+                }
+
+                //System.out.println(goodLabel);
+
+                // Generate the axiom with skos:prefLabel as property and the good label
+                OWLAnnotation prefLabel = df.getOWLAnnotation(prefLabelProperty, df.getOWLLiteral(goodLabel, "fr"));
+                OWLAxiom newAxiom = df.getOWLAnnotationAssertionAxiom(cls.getIRI(), prefLabel);
+                manager.applyChange(new AddAxiom(ontology, newAxiom));
+
+            }
+        }
+
     }
 
     public void cleanMultilingualOntology(String lang) {
