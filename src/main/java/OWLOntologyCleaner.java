@@ -93,42 +93,63 @@ public class OWLOntologyCleaner {
 
         String badLabel = "";
         String goodLabel = "";
+        String altLabelVal = "";
+        Pattern pattern = Pattern.compile("\"(.*?)\"");
         OWLAnnotationProperty prefLabelProperty = df.getOWLAnnotationProperty(IRI.create("http://www.w3.org/2004/02/skos/core#prefLabel"));
 
         for (OWLClass cls : ontology.getClassesInSignature()) {
-            boolean onlyHidden = true;
+            boolean noPrefLabel = true;
+            boolean asAltLabel = false;
 
             // Go through all annotations of the class, if it gets only a skos:hiddenLabel, then it separates the word at
             // each capital letter.
             for (OWLAnnotationAssertionAxiom annAx : EntitySearcher.getAnnotationAssertionAxioms(cls.getIRI(), ontology)) {
                 if (annAx.getProperty().toString().equals("<http://www.w3.org/2004/02/skos/core#hiddenLabel>")) {
                     // Extracting only the literal value (without @lang)
-                    Pattern pattern = Pattern.compile("\"(.*?)\"");
                     Matcher matcher = pattern.matcher(annAx.getValue().toString());
                     if (matcher.find())
                     {
                         badLabel = matcher.group(1);
                     }
-                } else {
-                    onlyHidden = false;
+                } else if (annAx.getProperty().toString().equals("<http://www.w3.org/2004/02/skos/core#altLabel>")) {
+                    asAltLabel = true;
+                    Matcher matcher = pattern.matcher(annAx.getValue().toString());
+                    if (matcher.find())
+                    {
+                        altLabelVal = matcher.group(1);
+                    }
+                } else  if (annAx.getProperty().toString().equals("<http://www.w3.org/2004/02/skos/core#prefLabel>")) {
+                    noPrefLabel = false;
                 }
             }
-            if (onlyHidden == true) {
-                // If there is only a skos:hiddenLabel property we split the string at each capital letter
-                // (except if the whole string is in capital) and put it in a skos:prefLabel property
 
-                if (!StringUtils.isAllUpperCase(badLabel)) {
-                    String[] arrayLabel = badLabel.split("(?=[A-Z])");
-                    StringBuilder builder = new StringBuilder();
-                    for (String s : arrayLabel) {
-                        builder.append(s + " ");
+            // Now that we know if the class as a prefLabel and a altLabel we can generate the good label
+            // if no prefLabel : generated from altLabel. If no altLabel : prefLabel generated from hiddenlabel after transformations
+            if (noPrefLabel == true) {
+
+                if (asAltLabel == true) {
+                    goodLabel = altLabelVal;
+                } else  {
+                    // If there is only a skos:hiddenLabel property we split the string at each capital letter
+                    // (except if the whole string is in capital) and put it in a skos:prefLabel property
+
+                    if (!StringUtils.isAllUpperCase(badLabel)) {
+                        String[] arrayLabel = badLabel.split("(?=[A-Z])");
+                        StringBuilder builder = new StringBuilder();
+                        for (String s : arrayLabel) {
+                            builder.append(s + " ");
+                        }
+                        goodLabel = builder.toString().trim().toLowerCase();
+                        goodLabel = goodLabel.replaceAll(" d l c o", " DLCO").replaceAll(" p c o2", " pCO2").replaceAll(" c o2", " CO2").replaceAll(" p o2", " pO2").replaceAll(" g t", " GT");
+                        goodLabel = goodLabel.replaceAll(" v i i i", " VIII").replaceAll(" v i i", " VII").replaceAll(" v i", " VI").replaceAll(" x i i", " XII").replaceAll(" x i", " XI").replaceAll(" i i", " II");
+                        goodLabel = goodLabel.replaceAll(" l ", " l'").replaceAll(" d ", " d'");
+                    } else {
+                        goodLabel = badLabel;
                     }
-                    goodLabel = builder.toString().trim().toLowerCase();
-                } else {
-                    goodLabel = badLabel;
-                }
 
-                //System.out.println(goodLabel);
+
+                    //System.out.println(goodLabel);
+                }
 
                 // Generate the axiom with skos:prefLabel as property and the good label
                 OWLAnnotation prefLabel = df.getOWLAnnotation(prefLabelProperty, df.getOWLLiteral(goodLabel, "fr"));
@@ -136,6 +157,7 @@ public class OWLOntologyCleaner {
                 manager.applyChange(new AddAxiom(ontology, newAxiom));
 
             }
+
         }
 
     }
