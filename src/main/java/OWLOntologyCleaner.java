@@ -49,7 +49,8 @@ public class OWLOntologyCleaner {
                     oc.cleanOntopneumoOntology();
                 }
 
-                oc.cleanMultilingualOntology("fr");
+                //Clean the ontology by only keeping the lang asked for literals.
+                oc.cleanMultilingualOntology("en");
 
                 //oc.printLabels();
                 oc.outputOntology(ontologyFile.getName());
