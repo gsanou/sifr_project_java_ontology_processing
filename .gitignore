@@ -1,3 +1,4 @@
-ontology_files
 .idea
-*.iml
+.DS_Store
+CUISemProcessor.iml
+target

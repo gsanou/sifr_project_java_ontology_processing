@@ -1,0 +1,13 @@
+package org.sifrproject.ontology.matching;
+
+
+import org.getalp.lexsema.similarity.signatures.SemanticSignature;
+import org.sifrproject.ontology.UMLSLanguageCode;
+
+public interface CUITerm {
+    String getCUI();
+    String getTerm();
+    UMLSLanguageCode getLanguageCode();
+    SemanticSignature getSemanticSignature();
+
+}
