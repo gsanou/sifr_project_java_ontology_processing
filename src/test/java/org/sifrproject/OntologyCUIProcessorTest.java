@@ -5,9 +5,9 @@ import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
 /**
- * Unit test for simple ProcessOntology.
+ * Unit test for simple OntologyCUIProcessor.
  */
-public class ProcessOntologyTest
+public class OntologyCUIProcessorTest
     extends TestCase
 {
     /**
@@ -15,7 +15,7 @@ public class ProcessOntologyTest
      *
      * @param testName name of the test case
      */
-    public ProcessOntologyTest(String testName )
+    public OntologyCUIProcessorTest(String testName )
     {
         super( testName );
     }
@@ -25,7 +25,7 @@ public class ProcessOntologyTest
      */
     public static Test suite()
     {
-        return new TestSuite( ProcessOntologyTest.class );
+        return new TestSuite( OntologyCUIProcessorTest.class );
     }
 
     /**

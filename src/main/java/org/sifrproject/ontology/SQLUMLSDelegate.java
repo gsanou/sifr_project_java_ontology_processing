@@ -11,6 +11,7 @@ import redis.clients.jedis.JedisPool;
 
 import java.sql.*;
 import java.util.*;
+import java.util.stream.Stream;
 
 
 public class SQLUMLSDelegate implements UMLSDelegate {
@@ -22,8 +23,6 @@ public class SQLUMLSDelegate implements UMLSDelegate {
     private static final Logger logger = LoggerFactory.getLogger(SQLUMLSDelegate.class);
     private static final String CUITUI_PREFIX = "cuitui_";
 
-    private final List<CUITerm> cuiTerms;
-
 
     public SQLUMLSDelegate(final String jdbcURI, final String sqlUser, final String sqlPass, final String sqlDB, final JedisPool jedisPool) {
         try {
@@ -34,7 +33,6 @@ public class SQLUMLSDelegate implements UMLSDelegate {
             logger.error("Cannot connect to database: {}", e.getLocalizedMessage());
         }
         this.jedisPool = jedisPool;
-        cuiTerms = new ArrayList<>();
     }
 
     @SuppressWarnings("OverlyNestedMethod")
@@ -53,7 +51,7 @@ public class SQLUMLSDelegate implements UMLSDelegate {
                             while (resultSet.next()) {
                                 localTuis.add(resultSet.getString(1));
                             }
-                            if(!localTuis.isEmpty()) {
+                            if (!localTuis.isEmpty()) {
                                 jedis.lpush(CUITUI_PREFIX + cui, localTuis.toArray(new String[localTuis.size()]));
                             }
                         }
@@ -63,7 +61,7 @@ public class SQLUMLSDelegate implements UMLSDelegate {
                     }
 
                 }
-                    tuis.addAll(localTuis);
+                tuis.addAll(localTuis);
             }
         }
         return tuis;
@@ -71,29 +69,74 @@ public class SQLUMLSDelegate implements UMLSDelegate {
 
     @Override
     public List<CUITerm> getCUIConceptNameMap(final UMLSLanguageCode languageCode) {
+        return getCUIConceptNameMap(languageCode, null);
+    }
+
+    private String generateCUIString(final Collection<String> cuis) {
+        final Stream<String> stream = cuis.stream();
+        final Optional<String> reduce = stream.reduce(String::concat);
+        return reduce.orElse("");
+    }
+
+    @SuppressWarnings("OverlyNestedMethod")
+    @Override
+    public List<CUITerm> getCUIConceptNameMap(final UMLSLanguageCode languageCode, final Collection<String> cuis) {
         final String code = languageCode.getLanguageCode();
+        final List<CUITerm> cuiTerms = new ArrayList<>();
         try (Jedis jedis = jedisPool.getResource()) {
-            Map<String, String> conceptNameMap = jedis.hgetAll(CONCEPT_NAME_MAP + languageCode.getLanguageCode());
+            String key = CONCEPT_NAME_MAP + languageCode.getLanguageCode();
+            if (cuis != null) {
+                key += generateCUIString(cuis);
+            }
+            Map<String, String> conceptNameMap = jedis.hgetAll(key);
             if (conceptNameMap.isEmpty()) {
                 try (final Statement statement = connection.createStatement()) {
-                    final String query = "SELECT CUI,STR FROM MRCONSO WHERE LAT='"+code+"';";
+                    String query = "SELECT CUI,STR FROM MRCONSO WHERE LAT='" + code + "'";
+                    if (cuis != null) {
+                        query += " AND (";
+                        boolean first = true;
+                        for (final String cui : cuis) {
+                            if (first) {
+                                first = false;
+                            } else {
+                                query += "OR ";
+                            }
+                            query += "CUI='" + cui + "' ";
+                        }
+                        query += ");";
+                    }
+                    logger.debug(query);
                     try (final ResultSet resultSet = statement.executeQuery(query)) {
                         conceptNameMap = new HashMap<>();
                         while (resultSet.next()) {
-                            conceptNameMap.put(resultSet.getString(2), resultSet.getString(1));
+                            final String value = resultSet.getString(2);
+                            conceptNameMap.put(value, resultSet.getString(1));
                         }
-                        jedis.hmset(CONCEPT_NAME_MAP + code, conceptNameMap);
+                        if(!conceptNameMap.isEmpty()) {
+                            jedis.hmset(key, conceptNameMap);
+                        }
                     }
                 } catch (final SQLException e) {
                     logger.error(ERROR_MESSAGE_CANNOT_RUN_SQL_QUERY, e.getLocalizedMessage());
                 }
-                for(final Map.Entry<String,String> entry : conceptNameMap.entrySet()){
-                    final SemanticSignature semanticSignature =
-                            DefaultSemanticSignatureFactory.DEFAULT.createSemanticSignature(entry.getKey());
-                    cuiTerms.add(new CUITermImpl(entry.getValue(),entry.getKey(),languageCode,semanticSignature));
-                }
+            }
+            populateTermList(cuiTerms,conceptNameMap, languageCode);
+        }
+        return cuiTerms;
+    }
+
+
+    private void populateTermList(final List<CUITerm> cuiTerms, final Map<String, String> conceptNameMap, final UMLSLanguageCode languageCode){
+        for (final Map.Entry<String, String> entry : conceptNameMap.entrySet()) {
+            final SemanticSignature semanticSignature =
+                    DefaultSemanticSignatureFactory.DEFAULT.createSemanticSignature(entry.getKey());
+            final CUITerm cuiTerm = new CUITermImpl(entry.getValue(), entry.getKey(), languageCode, semanticSignature);
+            if(cuiTerms.contains(cuiTerm)) {
+                final CUITerm other = cuiTerms.get(cuiTerms.indexOf(cuiTerm));
+                other.appendToSignature(cuiTerm.getTerm());
+            } else {
+                cuiTerms.add(cuiTerm);
             }
         }
-        return Collections.unmodifiableList(cuiTerms);
     }
 }

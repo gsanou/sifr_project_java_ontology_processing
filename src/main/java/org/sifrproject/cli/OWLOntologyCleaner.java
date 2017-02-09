@@ -5,6 +5,8 @@ import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.formats.RDFXMLDocumentFormat;
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.search.EntitySearcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -14,37 +16,37 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
-/**
- * Created by Vincent on 15/04/2015.
- */
+
 public class OWLOntologyCleaner {
 
-    static OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
-    static OWLDataFactory df = OWLManager.getOWLDataFactory();
+    private static final Logger logger = LoggerFactory.getLogger(OWLOntologyCleaner.SKOS_CORE_PREF_LABEL);
+    public static final String SKOS_CORE_PREF_LABEL = "http://www.w3.org/2004/02/skos/core#prefLabel";
+    private static final OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
+    private static final OWLDataFactory df = OWLManager.getOWLDataFactory();
 
     private OWLOntology ontology;
     private OWLOntology cleanedOntology;
 
-    public OWLOntologyCleaner(File ontologyFile) {
+    public OWLOntologyCleaner(final File ontologyFile) {
         //File ontologyFile = new File(ontologyFileName);
         try {
             //Load ontology from file
             ontology = manager.loadOntologyFromOntologyDocument(ontologyFile);
-        } catch (OWLOntologyCreationException e) {
-            e.printStackTrace();
+        } catch (final OWLOntologyCreationException e) {
+            logger.error(e.getLocalizedMessage());
         }
     }
 
-    public static void main(String [ ] args) throws OWLOntologyCreationException {
+    public static void main(final String [ ] args) throws OWLOntologyCreationException {
         //String ontologyFileName = "ontology_files/ONTOTOXNUC.owl";
-        String dirPath = "ontology_files/cmo/";
+        final String dirPath = String.format("ontology_files%scmo%s",File.separator,File.separator);
 
-        File dir = new File(dirPath);
-        File[] directoryListing = dir.listFiles();
+        final File dir = new File(dirPath);
+        final File[] directoryListing = dir.listFiles();
         // Go through ontology files in the directory
         if (directoryListing != null) {
-            for (File ontologyFile : directoryListing) {
-                OWLOntologyCleaner oc = new OWLOntologyCleaner(ontologyFile);
+            for (final File ontologyFile : directoryListing) {
+                final OWLOntologyCleaner oc = new OWLOntologyCleaner(ontologyFile);
                 if (ontologyFile.getName().equals("ONTOPNEUMO.owl")) {
                     oc.cleanOntopneumoOntology();
                 }
@@ -54,49 +56,49 @@ public class OWLOntologyCleaner {
 
                 //oc.printLabels();
                 oc.outputOntology(ontologyFile.getName());
-                System.out.println(ontologyFile.getName() + " : DONE");
+                logger.info("{} : DONE", ontologyFile.getName());
             }
         }
     }
 
-    public void printLabels() {
+    void printLabels() {
 
-        for (OWLClass cls : ontology.getClassesInSignature()) {
+        for (final OWLClass cls : ontology.getClassesInSignature()) {
             // Get the annotations on the class that use the label property
             //System.out.println(cls);
-            for (OWLAnnotation annotation : EntitySearcher.getAnnotations(cls.getIRI(), ontology)) {
+            for (final OWLAnnotation annotation : EntitySearcher.getAnnotations(cls.getIRI(), ontology)) {
                 //System.out.println(annotation);
                 if (annotation.getValue() instanceof OWLLiteral) {
-                    OWLLiteral val = (OWLLiteral) annotation.getValue();
+                    final OWLLiteral val = (OWLLiteral) annotation.getValue();
                     // look for french labels
                     if (val.hasLang("fr") || val.hasLang("en") || val.hasLang("")) {
-                        System.out.println(cls + " " + annotation.getProperty() + " " + val.getLiteral() + " " + val.getLang());
+                        logger.info("{} {} {} {}", cls, annotation.getProperty(), val.getLiteral(), val.getLang());
                     }
                 }
             }
         }
     }
 
-    public void outputOntology(String outputFilename) {
+    private void outputOntology(final String outputFilename) {
         // Save the ontology in a file in ontology_files
 
-        File outputFile = new File("ontology_files/lso/" + outputFilename);
-        RDFXMLDocumentFormat rdfxmlFormat = new RDFXMLDocumentFormat();
+        final RDFXMLDocumentFormat rdfxmlFormat = new RDFXMLDocumentFormat();
         try {
+            final File outputFile = new File("ontology_files/lso/" + outputFilename);
             manager.saveOntology(ontology, rdfxmlFormat, IRI.create(outputFile.toURI()));
-        } catch (OWLOntologyStorageException e) {
-            e.printStackTrace();
+        } catch (final OWLOntologyStorageException e) {
+            logger.error(e.getLocalizedMessage());
         }
     }
 
-    public void cleanOntopneumoOntology() {
+    private void cleanOntopneumoOntology() {
         // A method to clean the very special case of ONTOPNEUMO
 
         String badLabel = "";
         String goodLabel = "";
         String altLabelVal = "";
         Pattern pattern = Pattern.compile("\"(.*?)\"");
-        OWLAnnotationProperty prefLabelProperty = df.getOWLAnnotationProperty(IRI.create("http://www.w3.org/2004/02/skos/core#prefLabel"));
+        OWLAnnotationProperty prefLabelProperty = df.getOWLAnnotationProperty(IRI.create(SKOS_CORE_PREF_LABEL));
 
         for (OWLClass cls : ontology.getClassesInSignature()) {
             boolean noPrefLabel = true;

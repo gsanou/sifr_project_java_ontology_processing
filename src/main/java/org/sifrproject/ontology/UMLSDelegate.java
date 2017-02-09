@@ -9,4 +9,5 @@ import java.util.List;
 public interface UMLSDelegate {
     Collection<String> getTUIsForCUIs(Collection<String> cuis);
     List<CUITerm> getCUIConceptNameMap(final UMLSLanguageCode languageCode);
+    List<CUITerm> getCUIConceptNameMap(final UMLSLanguageCode languageCode, Collection<String> cuis);
 }

@@ -1,21 +1,32 @@
 package org.sifrproject.ontology;
 
-import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.ontology.OntClass;
+import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.util.iterator.ExtendedIterator;
 
 import java.util.Collection;
 
 public interface OntologyDelegate {
 
-    Collection<String> findCUIsForMappings(final String classURI);
+    ExtendedIterator<OntClass> getSourceClasses();
+
+    Collection<String> findCUIsFromMappings(final String classURI);
 
     Collection<String> findCUIsInAltLabel(final String classURI);
 
     Collection<String> findTUIsForMappings(final String classURI);
 
-    void cuisFromModel(final Model model, final String classURI, final Collection<String> cuis);
+    void cuisFromSourceModel(final String classURI, final Collection<String> cuis);
+    void tuisFromSourceModel(final String classURI, final Collection<String> tuis);
 
-    void tuisFromModel(final Model model, final String classURI, final Collection<String> tuis);
+    String conceptLabelFromSourceModel(final Resource thisClass);
 
-    void addTUIToModel(final String classURI, final String tui, final Model model);
-    void addCUIToModel(final String classURI, final String cui, final Model model);
+    @SuppressWarnings("all")
+    void addTUIToSourceModel(final String classURI, final String tui);
+    @SuppressWarnings("all")
+    void addCUIToSourceModel(final String classURI, final String cui);
+
+    void writeEnrichedModel();
+
+    String getOntologyName();
 }

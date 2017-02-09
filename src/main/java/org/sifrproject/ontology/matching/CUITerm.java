@@ -9,5 +9,8 @@ public interface CUITerm {
     String getTerm();
     UMLSLanguageCode getLanguageCode();
     SemanticSignature getSemanticSignature();
+    void appendToSignature(String text);
+    double getScore();
 
+    void setScore(double score);
 }
