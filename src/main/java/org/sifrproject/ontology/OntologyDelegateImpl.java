@@ -337,11 +337,11 @@ public final class OntologyDelegateImpl implements OntologyDelegate {
     private InputStreamReader getFileModelReader(final String modelURL) throws IOException {
         final InputStreamReader modelReader;
         if (modelURL.endsWith(".bz2")) {
-            modelReader = new InputStreamReader(new BZip2CompressorInputStream(new FileInputStream(modelURL)));
+            modelReader = new InputStreamReader(new BZip2CompressorInputStream(new FileInputStream(modelURL)),"UTF-8");
         } else if (modelURL.endsWith(".gz")) {
-            modelReader = new InputStreamReader(new GzipCompressorInputStream(new FileInputStream(modelURL)));
+            modelReader = new InputStreamReader(new GzipCompressorInputStream(new FileInputStream(modelURL)),"UTF-8");
         } else {
-            modelReader = new InputStreamReader(new FileInputStream(modelURL));
+            modelReader = new InputStreamReader(new FileInputStream(modelURL), "UTF-8");
         }
         return modelReader;
     }
