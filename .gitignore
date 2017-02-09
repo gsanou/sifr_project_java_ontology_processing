@@ -2,3 +2,9 @@
 .DS_Store
 CUISemProcessor.iml
 target
+*.ttl
+*.owl
+*.csv
+*.pdf
+*.txt
+*.xlsx

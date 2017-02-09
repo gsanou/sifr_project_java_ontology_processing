@@ -95,7 +95,9 @@ public final class OntologyDelegateImpl implements OntologyDelegate {
 
             if (cuis.isEmpty()) {
                 cuis = new ArrayList<>();
-                cuisFromAltLabel(sourceModel, classURI, cuis);
+                synchronized (sourceModel) {
+                    cuisFromAltLabel(sourceModel, classURI, cuis);
+                }
                 if (!cuis.isEmpty()) {
                     jedis.lpush(ALTCUI_PREFIX + classURI, cuis.toArray(new String[cuis.size()]));
                 }
@@ -114,8 +116,10 @@ public final class OntologyDelegateImpl implements OntologyDelegate {
                 for (final String mappingURI : mappings) {
                     tuis = jedis.lrange(TUI_PREFIX + mappingURI, 0, -1);
                     if (tuis.isEmpty()) {
-                        tuis = new ArrayList<>();
-                        tuisFromModel(targetModel, mappingURI, tuis);
+                        synchronized (targetModel) {
+                            tuis = new ArrayList<>();
+                            tuisFromModel(targetModel, mappingURI, tuis);
+                        }
                     }
                 }
             }
@@ -125,12 +129,16 @@ public final class OntologyDelegateImpl implements OntologyDelegate {
 
     @Override
     public void cuisFromSourceModel(final String classURI, final Collection<String> cuis) {
-        cuisFromModel(sourceModel, classURI, cuis);
+        synchronized (sourceModel) {
+            cuisFromModel(sourceModel, classURI, cuis);
+        }
     }
 
     @Override
     public void tuisFromSourceModel(final String classURI, final Collection<String> tuis) {
-        tuisFromModel(sourceModel, classURI, tuis);
+        synchronized (sourceModel) {
+            tuisFromModel(sourceModel, classURI, tuis);
+        }
     }
 
     @Override
@@ -139,13 +147,15 @@ public final class OntologyDelegateImpl implements OntologyDelegate {
         try(Jedis jedis = jedisPool.getResource()) {
             final String cachedPrefLabel = jedis.get(PREFLABEL_PREFIX+thisClass.getURI());
             if(cachedPrefLabel == null) {
-                final StmtIterator stmtIterator = sourceModel.listStatements(thisClass, sourceModel.createOntProperty(OWLOntologyCleaner.SKOS_CORE_PREF_LABEL), (RDFNode) null);
-                final StringBuilder conceptDescription = new StringBuilder();
-                while (stmtIterator.hasNext()) {
-                    final Statement statement = stmtIterator.next();
-                    conceptDescription.append(statement.getString());
+                synchronized (sourceModel) {
+                    final StmtIterator stmtIterator = sourceModel.listStatements(thisClass, sourceModel.createOntProperty(OWLOntologyCleaner.SKOS_CORE_PREF_LABEL), (RDFNode) null);
+                    final StringBuilder conceptDescription = new StringBuilder();
+                    while (stmtIterator.hasNext()) {
+                        final Statement statement = stmtIterator.next();
+                        conceptDescription.append(statement.getString());
+                    }
+                    prefLabel = conceptDescription.toString();
                 }
-                prefLabel = conceptDescription.toString();
             } else {
                 prefLabel = cachedPrefLabel;
             }
@@ -172,15 +182,15 @@ public final class OntologyDelegateImpl implements OntologyDelegate {
 
 
     private void cuisFromModel(final Model model, final String classURI, final Collection<String> cuis) {
-        final StmtIterator stmtIterator = model.listStatements(
-                ResourceFactory.createResource(classURI),
-                model.createProperty(CUI_PROPERTY_URI),
-                (RDFNode) null);
+            final StmtIterator stmtIterator = model.listStatements(
+                    ResourceFactory.createResource(classURI),
+                    model.createProperty(CUI_PROPERTY_URI),
+                    (RDFNode) null);
 
-        while (stmtIterator.hasNext()) {
-            final Statement statement = stmtIterator.nextStatement();
-            cuis.add(statement.getString());
-        }
+            while (stmtIterator.hasNext()) {
+                final Statement statement = stmtIterator.nextStatement();
+                cuis.add(statement.getString());
+            }
     }
 
 
@@ -198,13 +208,17 @@ public final class OntologyDelegateImpl implements OntologyDelegate {
 
     @Override
     public void addTUIToSourceModel(final String classURI, final String tui) {
-        sourceModel.add(ResourceFactory.createResource(classURI), sourceModel.createProperty(TUI_PROPERTY_URI), tui);
-        sourceModel.add(ResourceFactory.createResource(classURI), sourceModel.createProperty(HAS_STY_PROPERTY_URI), sourceModel.createClass(STY_URL_BASE+tui));
+        synchronized (sourceModel) {
+            sourceModel.add(ResourceFactory.createResource(classURI), sourceModel.createProperty(TUI_PROPERTY_URI), tui);
+            sourceModel.add(ResourceFactory.createResource(classURI), sourceModel.createProperty(HAS_STY_PROPERTY_URI), sourceModel.createClass(STY_URL_BASE + tui));
+        }
     }
 
     @Override
     public void addCUIToSourceModel(final String classURI, final String cui) {
-        sourceModel.add(ResourceFactory.createResource(classURI), sourceModel.createProperty(CUI_PROPERTY_URI), cui);
+        synchronized (sourceModel) {
+            sourceModel.add(ResourceFactory.createResource(classURI), sourceModel.createProperty(CUI_PROPERTY_URI), cui);
+        }
     }
 
     @Override
@@ -214,11 +228,11 @@ public final class OntologyDelegateImpl implements OntologyDelegate {
 
     @Override
     public ExtendedIterator<OntClass> getSourceClasses() {
-        return sourceModel.listClasses();
+        return sourceModel.listNamedClasses();
     }
 
     @Override
-    @SuppressWarnings("FeatureEnvy")
+    @SuppressWarnings({"FeatureEnvy", "OverlyNestedMethod"})
     public Collection<String> findCUIsFromMappings(final String classURI) {
         Collection<String> cuis = new ArrayList<>();
         final Collection<String> mappings = findMappings(classURI);
@@ -227,11 +241,12 @@ public final class OntologyDelegateImpl implements OntologyDelegate {
                 for (final String mappingURI : mappings) {
                     cuis = jedis.lrange(CUI_PREFIX + mappingURI, 0, -1);
                     if (cuis.isEmpty()) {
+                        synchronized (targetModel) {
+                            cuisFromModel(targetModel, mappingURI, cuis);
+                            if (cuis.isEmpty()) {
+                                cuisFromAltLabel(targetModel, mappingURI, cuis);
 
-                        cuisFromModel(targetModel, mappingURI, cuis);
-
-                        if (cuis.isEmpty()) {
-                            cuisFromAltLabel(targetModel, mappingURI, cuis);
+                            }
                         }
                         if (!cuis.isEmpty()) {
                             jedis.lpush(CUI_PREFIX + mappingURI, cuis.toArray(new String[cuis.size()]));
@@ -251,16 +266,17 @@ public final class OntologyDelegateImpl implements OntologyDelegate {
             mappings = jedis.lrange(MAPPING_PREFIX + classURI, 0, -1);
             if (mappings.isEmpty()) {
                 mappings = new ArrayList<>();
+                synchronized (mappingsModel) {
+                    final StmtIterator stmtIterator = mappingsModel.listStatements(
+                            ResourceFactory.createResource(classURI),
+                            mappingsModel.createProperty(MAPPINGS_PROPERTY_URI),
+                            (RDFNode) null);
 
-                final StmtIterator stmtIterator = mappingsModel.listStatements(
-                        ResourceFactory.createResource(classURI),
-                        mappingsModel.createProperty(MAPPINGS_PROPERTY_URI),
-                        (RDFNode) null);
-
-                while (stmtIterator.hasNext()) {
-                    final Statement statement = stmtIterator.nextStatement();
-                    final RDFNode object = statement.getObject();
-                    mappings.add(object.toString());
+                    while (stmtIterator.hasNext()) {
+                        final Statement statement = stmtIterator.nextStatement();
+                        final RDFNode object = statement.getObject();
+                        mappings.add(object.toString());
+                    }
                 }
 
                 if (!mappings.isEmpty()) {

@@ -19,6 +19,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * Hello world!
@@ -51,6 +52,8 @@ public final class OntologyCUIProcessor implements OntologyProcessor {
 
     private PrintWriter noCUIConceptsWriter;
 
+    private boolean disambiguate;
+    private boolean match;
 
 
     private OntologyCUIProcessor(final Properties properties) {
@@ -83,14 +86,21 @@ public final class OntologyCUIProcessor implements OntologyProcessor {
         termSimilarityRanker = new TverskiTermSimilarityRanker(jedisPool);
 
         try {
-            noCUIConceptsWriter = new PrintWriter(ontologyName+"_concepts_without_cui.txt");
+            noCUIConceptsWriter = new PrintWriter(ontologyName + "_concepts_without_cui.txt");
         } catch (final FileNotFoundException e) {
             logger.error(e.getLocalizedMessage());
         }
 
+        if (properties.containsKey(DefaultCommandlineHandler.CONFIG_DISAMBIGUATE)) {
+            disambiguate = true;
+        }
+        if (properties.containsKey(DefaultCommandlineHandler.CONFIG_MATCH)) {
+            match = true;
+        }
+
+
         ontologyStats = new CUIOntologyStats(ontologyName);
     }
-
 
 
     /**
@@ -100,17 +110,22 @@ public final class OntologyCUIProcessor implements OntologyProcessor {
     public void processOntology() {
         final ExtendedIterator<OntClass> classes = ontologyDelegate.getSourceClasses();
         final List<OntClass> classList = classes.toList();
-        int currentClass = 0;
-        for (final RDFNode thisClass : classList) {
-            final double progress = (100d * currentClass) / (double) classList.size();
-            ontologyStats.incrementStatistic(CUIOntologyStats.TOTAL_CLASS_COUNT_STATISTIC);
-            logger.info(String.format("[%.2f] Processing: %s", progress, thisClass));
-            final Collection<String> cuis = processCUIs(thisClass);
-            processTUIs(thisClass, cuis);
-            currentClass++;
-        }
+        //Iterate over all classes in parallel, automatically dispatched by the java stream on all available CPUs
+        final Stream<OntClass> ontClassStream = classList.parallelStream();
+        ontClassStream.forEach(this::processClass);
+        //Writing stats
         ontologyStats.writeStatistics();
+
+        //Writing enriched model
         ontologyDelegate.writeEnrichedModel();
+    }
+
+    private void processClass(final OntClass thisClass) {
+        ontologyStats.incrementStatistic(CUIOntologyStats.TOTAL_CLASS_COUNT_STATISTIC);
+        logger.info(String.format("Processing: %s", thisClass));
+        final Collection<String> cuis = processCUIs(thisClass);
+        processTUIs(thisClass, cuis);
+
     }
 
     /**
@@ -132,20 +147,24 @@ public final class OntologyCUIProcessor implements OntologyProcessor {
             logger.info("\t{} CUIs found!", cuis.size());
         }
 
-        if (cuis.isEmpty()) {
+        if (cuis.isEmpty() && match) {
             logger.info("\tFalling back on UMLS to find CUIs...");
-            //disambiguate(cuis,thisClass);
+            disambiguate(cuis, thisClass);
         }
 
         //Too many CUIs, trying to use UMLS to determine the most relevant ones
         if (cuis.size() > AMBIGUITY_THRESHOLD) {
             logger.error("AMBIGUOUS!!!");
             ontologyStats.incrementStatistic(CUIOntologyStats.CLASSES_WITH_AMBIGUOUS_CUI_STATISTIC);
-            //disambiguate(cuis, thisClass);
+            if (disambiguate) {
+                disambiguate(cuis, thisClass);
+            }
         }
 
         logger.info("\tAdding {} CUIs to model...", cuis.size());
-        tuisToAdd.put(thisClass.toString(), cuis);
+        synchronized (cuisToAdd) {
+            cuisToAdd.put(thisClass.toString(), cuis);
+        }
         return cuis;
     }
 
@@ -158,7 +177,7 @@ public final class OntologyCUIProcessor implements OntologyProcessor {
                 umlsDelegate.getCUIConceptNameMap(UMLSLanguageCode.FRENCH) :
                 umlsDelegate.getCUIConceptNameMap(UMLSLanguageCode.FRENCH, cuis);
 
-        if(!conceptNameCUIMap.isEmpty()) {
+        if (!conceptNameCUIMap.isEmpty()) {
             termSimilarityRanker.rankBySimilarity(conceptNameCUIMap, conceptDescription);
             cuis.clear();
             final CUITerm cuiTerm = conceptNameCUIMap.get(0);
@@ -182,8 +201,11 @@ public final class OntologyCUIProcessor implements OntologyProcessor {
             logger.info("\t\tIn mappings...");
             cuis.addAll(ontologyDelegate.findCUIsFromMappings(classURI));
             if (cuis.isEmpty()) {
-                noCUIConceptsWriter.println(classURI);
-                noCUIConceptsWriter.flush();
+                //noinspection SynchronizeOnNonFinalField
+                synchronized (noCUIConceptsWriter) {
+                    noCUIConceptsWriter.println(classURI);
+                    noCUIConceptsWriter.flush();
+                }
                 ontologyStats.incrementStatistic(CUIOntologyStats.CLASSES_REMAINING_WITHOUT_CUI_STATISTIC);
             } else {
                 ontologyStats.incrementStatistic(CUIOntologyStats.CLASSES_WITH_CUI_IN_MAPPINGS_STATISTIC);
@@ -222,7 +244,9 @@ public final class OntologyCUIProcessor implements OntologyProcessor {
             ontologyStats.incrementStatistic(CUIOntologyStats.CLASSES_WITHOUT_TUI_STATISTIC);
         }
         logger.info("\tAdded {} TUIs", tuis.size());
-        tuisToAdd.put(thisClass.toString(), tuis);
+        synchronized (tuisToAdd) {
+            tuisToAdd.put(thisClass.toString(), tuis);
+        }
     }
 
     /**

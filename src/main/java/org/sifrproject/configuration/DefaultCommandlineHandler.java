@@ -16,8 +16,14 @@ public class DefaultCommandlineHandler implements CommandlineHandler {
     private static final String OUTPUT_FILE_SUFFIX_OPTION = "o";
     private static final String DEFAULT_OUTPUT_FILE_SUFFIX = ".ttl";
 
+    private static final String DISAMBIGUATE_CUI_OPTION = "dc";
+    private static final String MATCH_MISSING_CUI_OPTION = "mc";
+
     private static final String BY_DEFAULT = " by default.";
     public static final String CONFIG_OUTPUT_FILE_SUFFIX = "config.output_file_suffix";
+
+    public static final String CONFIG_DISAMBIGUATE = "config.disambiguate";
+    public static final String CONFIG_MATCH = "config.match";
 
     //Registering options for the posix command line parser
     private CommandLine commandLine; // Command Line arguments
@@ -27,6 +33,8 @@ public class DefaultCommandlineHandler implements CommandlineHandler {
         options.addOption("h", false, "Prints usage and exits. ");
         options.addOption(OUTPUT_FILE_SUFFIX_OPTION, true, "if present, use the specified value as the filename suffix for the output "
                 + "." + DEFAULT_OUTPUT_FILE_SUFFIX + BY_DEFAULT);
+        options.addOption(DISAMBIGUATE_CUI_OPTION, false,"If present, disambiguates ambiguous CUIs");
+        options.addOption(MATCH_MISSING_CUI_OPTION, false,"If present, tries to find missing CUI my matching prefLabel to all UMLS CUI descriptions");
     }
 
 
@@ -93,6 +101,13 @@ public class DefaultCommandlineHandler implements CommandlineHandler {
         final String ontologyURL = getOntologyURL();
         properties.put(OntologyCUIProcessor.CONFIG_SOURCE_ENDPOINT, ontologyURL);
         properties.put(CONFIG_OUTPUT_FILE_SUFFIX, outputFileSuffix);
+
+        if(commandLine.hasOption(DISAMBIGUATE_CUI_OPTION)){
+            properties.put(CONFIG_DISAMBIGUATE, "true");
+        }
+        if(commandLine.hasOption(MATCH_MISSING_CUI_OPTION)){
+            properties.put(CONFIG_MATCH,"true");
+        }
 
     }
 }
