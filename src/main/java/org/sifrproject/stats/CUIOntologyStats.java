@@ -12,6 +12,8 @@ public final class CUIOntologyStats extends OntologyStats{
     public static final String CLASSES_REMAINING_WITHOUT_CUI_STATISTIC = "classesRemainingWithoutCUI";
     public static final String CLASSES_REMAINING_WITHOUT_TUI_STATISTIC = "classesRemainingWithoutTUI";
     public static final String CLASSES_WITHOUT_TUI_STATISTIC = "classesWithoutTUI";
+    public static final String CLASSES_WITH_MORE_CUIS_THAN_UMLS = "classesWithMoreCUISThanUMLS";
+    public static final String CLASSES_WITH_LESS_CUIS_THAN_UMLS = "classesWithLessCUISThanUMLS";
 
     @SuppressWarnings("HardcodedFileSeparator")
     public CUIOntologyStats(final String ontologyName) {
@@ -22,6 +24,8 @@ public final class CUIOntologyStats extends OntologyStats{
         registerStatistic(CLASSES_WITH_CUI_IN_ALT_LABEL_STATISTIC, "CUI in altLabel");
         registerStatistic(CLASSES_WITH_CUI_IN_MAPPINGS_STATISTIC, "CUI in mappings");
         registerStatistic(CLASSES_WITH_AMBIGUOUS_CUI_STATISTIC, "Ambiguous CUI");
+        registerStatistic(CLASSES_WITH_MORE_CUIS_THAN_UMLS, "More CUIs than UMLS");
+        registerStatistic(CLASSES_WITH_LESS_CUIS_THAN_UMLS, "Less CUIs than UMLS");
         registerStatistic(CLASSES_REMAINING_WITHOUT_CUI_STATISTIC, "#Classes remaining without CUI");
         registerStatistic(CLASSES_REMAINING_WITHOUT_TUI_STATISTIC, "#Classes remaining without TUI");
     }

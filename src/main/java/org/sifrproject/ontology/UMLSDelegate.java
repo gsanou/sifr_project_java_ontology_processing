@@ -7,7 +7,10 @@ import java.util.Collection;
 import java.util.List;
 
 public interface UMLSDelegate {
-    Collection<String> getTUIsForCUIs(Collection<String> cuis);
+    Collection<String> getTUIsForCUIs(final Collection<String> cuis);
     List<CUITerm> getCUIConceptNameMap(final UMLSLanguageCode languageCode);
     List<CUITerm> getCUIConceptNameMap(final UMLSLanguageCode languageCode, Collection<String> cuis);
+
+    @SuppressWarnings({"OverlyNestedMethod", "OverlyLongMethod"})
+    Collection<String> getUMLSCUIs(final UMLSLanguageCode languageCode, final String cui,final String strValue);
 }

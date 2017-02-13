@@ -3,36 +3,43 @@ package org.sifrproject.ontology;
 
 public enum UMLSLanguageCode {
 
-    ENGLISH("ENG"),
-    FRENCH("FRE"),
-    CZECH("CZE"),
-    FINNISH("FIN"),
-    GERMAN("GER"),
-    ITALIAN("ITA"),
-    JAPANESE("JPN"),
-    POLISH("POL"),
-    PORTUGUESE("POR"),
-    RUSSIAN("RUS"),
-    SPANISH("SPA"),
-    SWEDISH("SWE"),
-    SERBO_CROATIAN("SCR"),
-    DUTCH("DUT"),
-    LATVIAN("LAV"),
-    HUNGARIAN("HUN"),
-    KOREAN("KOR"),
-    DANISH("DAN"),
-    NORWEGIAN("NOR"),
-    HEBREW("HEB"),
-    BASQUE("BAQ");
+    ENGLISH("ENG","en"),
+    FRENCH("FRE","fr"),
+    CZECH("CZE","cz"),
+    FINNISH("FIN","fi"),
+    GERMAN("GER","de"),
+    ITALIAN("ITA","it"),
+    JAPANESE("JPN","jp"),
+    POLISH("POL","pl"),
+    PORTUGUESE("POR","pt"),
+    RUSSIAN("RUS", "ru"),
+    SPANISH("SPA", "es"),
+    SWEDISH("SWE","sw"),
+    SERBO_CROATIAN("SCR","hr"),
+    DUTCH("DUT","nl"),
+        LATVIAN("LAV","lv"),
+    HUNGARIAN("HUN","hu"),
+    KOREAN("KOR","kr"),
+    DANISH("DAN","da"),
+    NORWEGIAN("NOR", "no"),
+    HEBREW("HEB","he"),
+    BASQUE("BAQ", "eu");
 
-    UMLSLanguageCode(final String languageCode) {
+    UMLSLanguageCode(final String languageCode, final String shortCode) {
         this.languageCode = languageCode;
+        this.shortCode = shortCode;
     }
 
     private final String languageCode;
+    private final String shortCode;
 
     @SuppressWarnings("PublicMethodNotExposedInInterface")
     public String getLanguageCode() {
         return languageCode;
+    }
+
+    @SuppressWarnings("PublicMethodNotExposedInInterface")
+    public String getShortCode() {
+        return shortCode;
     }
 }

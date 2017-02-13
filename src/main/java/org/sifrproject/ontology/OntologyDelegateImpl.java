@@ -12,10 +12,10 @@ import com.hp.hpl.jena.util.iterator.ExtendedIterator;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.sifrproject.cli.OWLOntologyCleaner;
+import org.sifrproject.utils.EmptyResultsCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisCommands;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -25,6 +25,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,10 +42,11 @@ public final class OntologyDelegateImpl implements OntologyDelegate {
     private static final String HAS_STY_PROPERTY_URI = "http://bioportal.bioontology.org/ontologies/umls/hasSTY";
     private static final String STY_URL_BASE = "http://purl.lirmm.fr/ontology/STY/";
     private static final String MAPPINGS_PROPERTY_URI = "http://linguistics-ontology.org/gold/freeTranslation";
+    private static final String SKOS_NOTE_PROPERTY_URI = "http://www.w3.org/2004/02/skos/core#note";
     private static final String TURTLE = "TURTLE";
 
 
-    private final JedisPool jedisPool;
+    private final JedisCommands jedis;
 
     private static final String MAPPING_PREFIX = "m_";
     private static final String CUI_PREFIX = "c_";
@@ -58,8 +61,10 @@ public final class OntologyDelegateImpl implements OntologyDelegate {
     private String ontologyName = "";
     private final String outputFileSuffix;
 
-    public OntologyDelegateImpl(final String mappingsModelURI, final String targetModelURI, final String sourceModelURI, final String outputFileSuffix, final JedisPool jedisPool) {
-        this.jedisPool = jedisPool;
+    private List<OntClass> sourceClasses;
+
+    public OntologyDelegateImpl(final String mappingsModelURI, final String targetModelURI, final String sourceModelURI, final String outputFileSuffix, final JedisCommands jedis) {
+        this.jedis = jedis;
 
         final Matcher matcher = URL_PATTERN.matcher(sourceModelURI);
         if (matcher.matches()) {
@@ -88,21 +93,22 @@ public final class OntologyDelegateImpl implements OntologyDelegate {
 
     @Override
     public Collection<String> findCUIsInAltLabel(final String classURI) {
-        Collection<String> cuis;
-        try (Jedis jedis = jedisPool.getResource()) {
 
-            cuis = jedis.lrange(ALTCUI_PREFIX + classURI, 0, -1);
+        final String key= ALTCUI_PREFIX + classURI;
+        Collection<String> cuis = jedis.lrange(key, 0, -1);
 
+        if (cuis.isEmpty() && !EmptyResultsCache.isEmpty(key, jedis)) {
+            cuis = new ArrayList<>();
+            synchronized (sourceModel) {
+                cuisFromAltLabel(sourceModel, classURI, cuis);
+            }
             if (cuis.isEmpty()) {
-                cuis = new ArrayList<>();
-                synchronized (sourceModel) {
-                    cuisFromAltLabel(sourceModel, classURI, cuis);
-                }
-                if (!cuis.isEmpty()) {
-                    jedis.lpush(ALTCUI_PREFIX + classURI, cuis.toArray(new String[cuis.size()]));
-                }
+                EmptyResultsCache.markEmpty(key, jedis);
+            } else {
+                jedis.lpush(key, cuis.toArray(new String[cuis.size()]));
             }
         }
+
         return cuis;
     }
 
@@ -112,17 +118,22 @@ public final class OntologyDelegateImpl implements OntologyDelegate {
         Collection<String> tuis = new ArrayList<>();
         final Collection<String> mappings = findMappings(classURI);
         if (!mappings.isEmpty()) {
-            try (Jedis jedis = jedisPool.getResource()) {
-                for (final String mappingURI : mappings) {
-                    tuis = jedis.lrange(TUI_PREFIX + mappingURI, 0, -1);
-                    if (tuis.isEmpty()) {
-                        synchronized (targetModel) {
-                            tuis = new ArrayList<>();
-                            tuisFromModel(targetModel, mappingURI, tuis);
-                        }
+            for (final String mappingURI : mappings) {
+                final String key = TUI_PREFIX + mappingURI;
+                tuis = jedis.lrange(key, 0, -1);
+                if (tuis.isEmpty()) {
+                    synchronized (targetModel) {
+                        tuis = new ArrayList<>();
+                        tuisFromModel(targetModel, mappingURI, tuis);
+                    }
+                    if(tuis.isEmpty()){
+                        EmptyResultsCache.markEmpty(key,jedis);
+                    } else {
+                        jedis.lpush(key,tuis.toArray(new String[tuis.size()]));
                     }
                 }
             }
+
         }
         return tuis;
     }
@@ -144,22 +155,24 @@ public final class OntologyDelegateImpl implements OntologyDelegate {
     @Override
     public String conceptLabelFromSourceModel(final Resource thisClass) {
         final String prefLabel;
-        try(Jedis jedis = jedisPool.getResource()) {
-            final String cachedPrefLabel = jedis.get(PREFLABEL_PREFIX+thisClass.getURI());
-            if(cachedPrefLabel == null) {
-                synchronized (sourceModel) {
-                    final StmtIterator stmtIterator = sourceModel.listStatements(thisClass, sourceModel.createOntProperty(OWLOntologyCleaner.SKOS_CORE_PREF_LABEL), (RDFNode) null);
-                    final StringBuilder conceptDescription = new StringBuilder();
-                    while (stmtIterator.hasNext()) {
-                        final Statement statement = stmtIterator.next();
-                        conceptDescription.append(statement.getString());
-                    }
-                    prefLabel = conceptDescription.toString();
+
+        final String key = PREFLABEL_PREFIX + thisClass.getURI();
+        final String cachedPrefLabel = jedis.get(key);
+        if (cachedPrefLabel == null) {
+            synchronized (sourceModel) {
+                final StmtIterator stmtIterator = sourceModel.listStatements(thisClass, sourceModel.createOntProperty(OWLOntologyCleaner.SKOS_CORE_PREF_LABEL), (RDFNode) null);
+                final StringBuilder conceptDescription = new StringBuilder();
+                while (stmtIterator.hasNext()) {
+                    final Statement statement = stmtIterator.next();
+                    conceptDescription.append(statement.getString());
                 }
-            } else {
-                prefLabel = cachedPrefLabel;
+                prefLabel = conceptDescription.toString();
+                jedis.set(key,prefLabel);
             }
+        } else {
+            prefLabel = cachedPrefLabel;
         }
+
         return prefLabel;
     }
 
@@ -182,15 +195,15 @@ public final class OntologyDelegateImpl implements OntologyDelegate {
 
 
     private void cuisFromModel(final Model model, final String classURI, final Collection<String> cuis) {
-            final StmtIterator stmtIterator = model.listStatements(
-                    ResourceFactory.createResource(classURI),
-                    model.createProperty(CUI_PROPERTY_URI),
-                    (RDFNode) null);
+        final StmtIterator stmtIterator = model.listStatements(
+                ResourceFactory.createResource(classURI),
+                model.createProperty(CUI_PROPERTY_URI),
+                (RDFNode) null);
 
-            while (stmtIterator.hasNext()) {
-                final Statement statement = stmtIterator.nextStatement();
-                cuis.add(statement.getString());
-            }
+        while (stmtIterator.hasNext()) {
+            final Statement statement = stmtIterator.nextStatement();
+            cuis.add(statement.getString());
+        }
     }
 
 
@@ -222,13 +235,33 @@ public final class OntologyDelegateImpl implements OntologyDelegate {
     }
 
     @Override
+    public void addSkosNote(final String classURI, final String note) {
+        sourceModel.add(ResourceFactory.createResource(classURI), sourceModel.createProperty(SKOS_NOTE_PROPERTY_URI), note);
+    }
+
+    @Override
+    public void purgeCUIsFromAltLabelAndSynonyms(final String classURI, final String lang) {
+        final Collection<String> toRemove = new ArrayList<>();
+        cuisFromAltLabel(sourceModel, classURI, toRemove);
+        for (final String value : toRemove) {
+            sourceModel.remove(ResourceFactory.createResource(classURI),
+                    sourceModel.createProperty(ALT_LABEL_PROPERTY),
+                    ResourceFactory.createLangLiteral(value,lang));
+        }
+    }
+
+    @Override
     public String getOntologyName() {
         return ontologyName;
     }
 
     @Override
-    public ExtendedIterator<OntClass> getSourceClasses() {
-        return sourceModel.listNamedClasses();
+    public List<OntClass> getSourceClasses() {
+        if(sourceClasses==null) {
+            final ExtendedIterator<OntClass> ontClassExtendedIterator = sourceModel.listNamedClasses();
+           sourceClasses = ontClassExtendedIterator.toList();
+        }
+        return Collections.unmodifiableList(sourceClasses);
     }
 
     @Override
@@ -237,55 +270,59 @@ public final class OntologyDelegateImpl implements OntologyDelegate {
         Collection<String> cuis = new ArrayList<>();
         final Collection<String> mappings = findMappings(classURI);
         if (!mappings.isEmpty()) {
-            try (Jedis jedis = jedisPool.getResource()) {
-                for (final String mappingURI : mappings) {
-                    cuis = jedis.lrange(CUI_PREFIX + mappingURI, 0, -1);
-                    if (cuis.isEmpty()) {
-                        synchronized (targetModel) {
-                            cuisFromModel(targetModel, mappingURI, cuis);
-                            if (cuis.isEmpty()) {
-                                cuisFromAltLabel(targetModel, mappingURI, cuis);
+            for (final String mappingURI : mappings) {
+                final String key = CUI_PREFIX+mappingURI;
+                cuis = jedis.lrange(key, 0, -1);
+                if (cuis.isEmpty() && !EmptyResultsCache.isEmpty(key,jedis)) {
+                    synchronized (targetModel) {
+                        cuisFromModel(targetModel, mappingURI, cuis);
+                        if (cuis.isEmpty()) {
+                            cuisFromAltLabel(targetModel, mappingURI, cuis);
 
-                            }
-                        }
-                        if (!cuis.isEmpty()) {
-                            jedis.lpush(CUI_PREFIX + mappingURI, cuis.toArray(new String[cuis.size()]));
                         }
                     }
+                    if (cuis.isEmpty()) {
+                        EmptyResultsCache.markEmpty(key, jedis);
+                    } else {
+                        jedis.lpush(key, cuis.toArray(new String[cuis.size()]));
+                    }
                 }
-                logger.info("\t\t\t\t Found {} CUIs in mappings.", cuis.size());
             }
+            logger.debug("\t\t\t\t Found {} CUIs in mappings.", cuis.size());
         }
+
         return cuis;
     }
 
     private Collection<String> findMappings(final String classURI) {
-        Collection<String> mappings;
 
-        try (Jedis jedis = jedisPool.getResource()) {
-            mappings = jedis.lrange(MAPPING_PREFIX + classURI, 0, -1);
-            if (mappings.isEmpty()) {
-                mappings = new ArrayList<>();
-                synchronized (mappingsModel) {
-                    final StmtIterator stmtIterator = mappingsModel.listStatements(
-                            ResourceFactory.createResource(classURI),
-                            mappingsModel.createProperty(MAPPINGS_PROPERTY_URI),
-                            (RDFNode) null);
 
-                    while (stmtIterator.hasNext()) {
-                        final Statement statement = stmtIterator.nextStatement();
-                        final RDFNode object = statement.getObject();
-                        mappings.add(object.toString());
-                    }
-                }
+        final String key = MAPPING_PREFIX+classURI;
+        Collection<String> mappings = jedis.lrange(key, 0, -1);
+        if (mappings.isEmpty() && !EmptyResultsCache.isEmpty(key,jedis)) {
+            mappings = new ArrayList<>();
+            synchronized (mappingsModel) {
+                final StmtIterator stmtIterator = mappingsModel.listStatements(
+                        ResourceFactory.createResource(classURI),
+                        mappingsModel.createProperty(MAPPINGS_PROPERTY_URI),
+                        (RDFNode) null);
 
-                if (!mappings.isEmpty()) {
-                    final String[] strMapping = mappings.toArray(new String[mappings.size()]);
-                    jedis.lpush(MAPPING_PREFIX + classURI, strMapping);
+                while (stmtIterator.hasNext()) {
+                    final Statement statement = stmtIterator.nextStatement();
+                    final RDFNode object = statement.getObject();
+                    mappings.add(object.toString());
                 }
             }
+
+            if (mappings.isEmpty()) {
+                EmptyResultsCache.markEmpty(key, jedis);
+            } else {
+                final String[] strMapping = mappings.toArray(new String[mappings.size()]);
+                jedis.lpush(MAPPING_PREFIX + classURI, strMapping);
+            }
         }
-        logger.info("Found {} mappings...", mappings.size());
+
+        logger.debug("Found {} mappings...", mappings.size());
         return mappings;
     }
 
@@ -309,7 +346,7 @@ public final class OntologyDelegateImpl implements OntologyDelegate {
                 dataset.begin(ReadWrite.READ);
                 final Model model = dataset.getDefaultModel();
                 dataset.end();
-                ontModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_DL_MEM_RDFS_INF,model);
+                ontModel = ModelFactory.createOntologyModel(OntModelSpec.OWL_DL_MEM_RDFS_INF, model);
             } else {
                 logger.info("\tFrom File: {}", modelURL);
                 // It's a file
@@ -337,9 +374,9 @@ public final class OntologyDelegateImpl implements OntologyDelegate {
     private InputStreamReader getFileModelReader(final String modelURL) throws IOException {
         final InputStreamReader modelReader;
         if (modelURL.endsWith(".bz2")) {
-            modelReader = new InputStreamReader(new BZip2CompressorInputStream(new FileInputStream(modelURL)),"UTF-8");
+            modelReader = new InputStreamReader(new BZip2CompressorInputStream(new FileInputStream(modelURL)), "UTF-8");
         } else if (modelURL.endsWith(".gz")) {
-            modelReader = new InputStreamReader(new GzipCompressorInputStream(new FileInputStream(modelURL)),"UTF-8");
+            modelReader = new InputStreamReader(new GzipCompressorInputStream(new FileInputStream(modelURL)), "UTF-8");
         } else {
             modelReader = new InputStreamReader(new FileInputStream(modelURL), "UTF-8");
         }

@@ -19,11 +19,14 @@ public class DefaultCommandlineHandler implements CommandlineHandler {
     private static final String DISAMBIGUATE_CUI_OPTION = "dc";
     private static final String MATCH_MISSING_CUI_OPTION = "mc";
 
+    private static final String SOURCE_LANGUAGE_OPTION = "l";
+
     private static final String BY_DEFAULT = " by default.";
     public static final String CONFIG_OUTPUT_FILE_SUFFIX = "config.output_file_suffix";
 
     public static final String CONFIG_DISAMBIGUATE = "config.disambiguate";
     public static final String CONFIG_MATCH = "config.match";
+    public static final String CONFIG_LANGUAGE = "config.language";
 
     //Registering options for the posix command line parser
     private CommandLine commandLine; // Command Line arguments
@@ -35,6 +38,7 @@ public class DefaultCommandlineHandler implements CommandlineHandler {
                 + "." + DEFAULT_OUTPUT_FILE_SUFFIX + BY_DEFAULT);
         options.addOption(DISAMBIGUATE_CUI_OPTION, false,"If present, disambiguates ambiguous CUIs");
         options.addOption(MATCH_MISSING_CUI_OPTION, false,"If present, tries to find missing CUI my matching prefLabel to all UMLS CUI descriptions");
+        options.addOption(SOURCE_LANGUAGE_OPTION,true,"The language of the ontology to process (ontologyFileOrUrl)...");
     }
 
 
@@ -43,10 +47,10 @@ public class DefaultCommandlineHandler implements CommandlineHandler {
      */
     private static void printUsage() {
         final HelpFormatter formatter = new HelpFormatter();
-        final String help =
-                "urlOrFile must point on an OWL ontology ";
+        @SuppressWarnings("HardcodedFileSeparator") final String help =
+                "ontologyFileOrUrl must point on an OWL ontology (TURTLE, XML/RDF)";
         //noinspection HardcodedFileSeparator
-        formatter.printHelp("java -cp /path/to/jar org.sifrproject.cli.OntologyCUIProcessor [OPTIONS] urlOrFile ...",
+        formatter.printHelp("java -cp /path/to/jar org.sifrproject.cli.OntologyCUIProcessor [OPTIONS] ontologyFileOrUrl ...",
                 "With OPTIONS in:", options,
                 help, false);
     }
