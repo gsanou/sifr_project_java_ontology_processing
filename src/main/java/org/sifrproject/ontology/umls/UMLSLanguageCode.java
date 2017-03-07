@@ -1,4 +1,4 @@
-package org.sifrproject.ontology;
+package org.sifrproject.ontology.umls;
 
 
 public enum UMLSLanguageCode {

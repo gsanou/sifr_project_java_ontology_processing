@@ -2,7 +2,7 @@ package org.sifrproject.ontology.matching;
 
 
 import org.getalp.lexsema.similarity.signatures.SemanticSignature;
-import org.sifrproject.ontology.UMLSLanguageCode;
+import org.sifrproject.ontology.umls.UMLSLanguageCode;
 
 public interface CUITerm {
     String getCUI();

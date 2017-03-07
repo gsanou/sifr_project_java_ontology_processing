@@ -5,6 +5,7 @@ import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.formats.RDFXMLDocumentFormat;
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.search.EntitySearcher;
+import org.sifrproject.ontology.prefix.OntologyPrefix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,10 +20,10 @@ import java.util.regex.Pattern;
 
 public class OWLOntologyCleaner {
 
-    private static final Logger logger = LoggerFactory.getLogger(OWLOntologyCleaner.SKOS_CORE_PREF_LABEL);
-    public static final String SKOS_CORE_PREF_LABEL = "http://www.w3.org/2004/02/skos/core#prefLabel";
+    private static final Logger logger = LoggerFactory.getLogger(OWLOntologyCleaner.class);
     private static final OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
     private static final OWLDataFactory df = OWLManager.getOWLDataFactory();
+    public static final String SKOS_PREF_LABEL = "skos:prefLabel";
 
     private OWLOntology ontology;
     private OWLOntology cleanedOntology;
@@ -98,7 +99,7 @@ public class OWLOntologyCleaner {
         String goodLabel = "";
         String altLabelVal = "";
         Pattern pattern = Pattern.compile("\"(.*?)\"");
-        OWLAnnotationProperty prefLabelProperty = df.getOWLAnnotationProperty(IRI.create(SKOS_CORE_PREF_LABEL));
+        OWLAnnotationProperty prefLabelProperty = df.getOWLAnnotationProperty(IRI.create(OntologyPrefix.getURI(SKOS_PREF_LABEL)));
 
         for (OWLClass cls : ontology.getClassesInSignature()) {
             boolean noPrefLabel = true;

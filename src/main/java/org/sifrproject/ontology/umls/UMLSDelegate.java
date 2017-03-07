@@ -1,4 +1,4 @@
-package org.sifrproject.ontology;
+package org.sifrproject.ontology.umls;
 
 
 import org.sifrproject.ontology.matching.CUITerm;
@@ -12,5 +12,5 @@ public interface UMLSDelegate {
     List<CUITerm> getCUIConceptNameMap(final UMLSLanguageCode languageCode, Collection<String> cuis);
 
     @SuppressWarnings({"OverlyNestedMethod", "OverlyLongMethod"})
-    Collection<String> getUMLSCUIs(final UMLSLanguageCode languageCode, final String cui,final String strValue);
+    Collection<String> getUMLSCUIs(final String code, final UMLSLanguageCode languageCode);
 }

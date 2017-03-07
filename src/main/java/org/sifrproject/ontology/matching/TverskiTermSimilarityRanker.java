@@ -6,7 +6,8 @@ import org.getalp.lexsema.similarity.signatures.DefaultSemanticSignatureFactory;
 import org.getalp.lexsema.similarity.signatures.SemanticSignature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import redis.clients.jedis.JedisCluster;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -15,14 +16,15 @@ import java.util.concurrent.*;
 
 public class TverskiTermSimilarityRanker implements PooledTermSimilarityRanker {
 
-    private final JedisCluster jedisCluster;
+    private final JedisPool jedisPool;
     private static final String SCORE_PREFIX = "rscore_";
 
     private static final Logger logger = LoggerFactory.getLogger(TverskiTermSimilarityRanker.class);
     private final ExecutorService threadPool;
 
-    public TverskiTermSimilarityRanker(final JedisCluster jedisCluster) {
-        this.jedisCluster = jedisCluster;
+    public TverskiTermSimilarityRanker(final JedisPool jedisPool) {
+        logger.info("Initializing similarity ranker...");
+        this.jedisPool = jedisPool;
         final Runtime runtime = Runtime.getRuntime();
         final int nbThreads = runtime.availableProcessors();
         threadPool = Executors.newFixedThreadPool(nbThreads);
@@ -42,21 +44,25 @@ public class TverskiTermSimilarityRanker implements PooledTermSimilarityRanker {
                 DefaultSemanticSignatureFactory.DEFAULT.createSemanticSignature(conceptDescription);
         final Collection<IntermediateScorer> scorers = new ArrayList<>();
 
+        try (Jedis jedis = jedisPool.getResource()) {
             for (final CUITerm cuiTerm : cuiTermList) {
-                final String scoreString = jedisCluster.get(SCORE_PREFIX+"_"+cuiTerm.getTerm()+"_"+conceptDescription);
-                if(scoreString==null) {
+                final String scoreString = jedis.get(SCORE_PREFIX + "_" + cuiTerm.getTerm() + "_" + conceptDescription);
+                if (scoreString == null) {
                     scorers.add(new IntermediateScorer(cuiTerm, conceptSemanticSignature, similarityMeasure));
                 } else {
                     cuiTerm.setScore(Double.valueOf(scoreString));
                 }
             }
+        }
 
 
-        try  {
+        try {
             final List<Future<CUITerm>> intermediateScores = threadPool.invokeAll(scorers);
-            for (final Future<CUITerm> intermediateScore : intermediateScores) {
-                final CUITerm cuiTerm = intermediateScore.get();
-                jedisCluster.set(SCORE_PREFIX+"_"+cuiTerm.getTerm()+"_"+conceptDescription,String.valueOf(cuiTerm.getScore()));
+            try(Jedis jedis = jedisPool.getResource()) {
+                for (final Future<CUITerm> intermediateScore : intermediateScores) {
+                    final CUITerm cuiTerm = intermediateScore.get();
+                    jedis.set(SCORE_PREFIX + "_" + cuiTerm.getTerm() + "_" + conceptDescription, String.valueOf(cuiTerm.getScore()));
+                }
             }
         } catch (final InterruptedException | ExecutionException e) {
             logger.error(e.getLocalizedMessage());

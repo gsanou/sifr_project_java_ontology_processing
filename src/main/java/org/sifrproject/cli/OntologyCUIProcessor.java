@@ -1,55 +1,58 @@
-package org.sifrproject.cli;
+src/main/java/org/sifrproject/ontology/BaseOntologyDelegate.javapackage org.sifrproject.cli;
 
 import com.hp.hpl.jena.ontology.OntClass;
 import com.hp.hpl.jena.rdf.model.RDFNode;
+import org.getalp.lexsema.util.VisualVMTools;
+import org.sifrproject.cli.api.AbstractOntologyProcessor;
+import org.sifrproject.cli.api.OntologyProcessor;
+import org.sifrproject.configuration.CUIProcessorCommandlineHandler;
 import org.sifrproject.configuration.CommandlineHandler;
-import org.sifrproject.configuration.DefaultCommandlineHandler;
-import org.sifrproject.ontology.*;
+import org.sifrproject.ontology.code.CodeFinder;
+import org.sifrproject.ontology.code.CompositeCodeFinder;
+import org.sifrproject.ontology.code.SKOSNotationCodeFinder;
+import org.sifrproject.ontology.cuis.CUIOntologyDelegate;
+import org.sifrproject.ontology.cuis.CUIOntologyDelegateImpl;
+import org.sifrproject.ontology.mapping.DefaultOntologyMappingDelegate;
+import org.sifrproject.ontology.mapping.Mapping;
+import org.sifrproject.ontology.mapping.OntologyMappingDelegate;
 import org.sifrproject.ontology.matching.CUITerm;
 import org.sifrproject.ontology.matching.PooledTermSimilarityRanker;
 import org.sifrproject.ontology.matching.TverskiTermSimilarityRanker;
+import org.sifrproject.ontology.umls.SQLUMLSDelegate;
+import org.sifrproject.ontology.umls.UMLSDelegate;
+import org.sifrproject.ontology.umls.UMLSLanguageCode;
 import org.sifrproject.stats.CUIOntologyStats;
 import org.sifrproject.stats.StatsHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import redis.clients.jedis.HostAndPort;
-import redis.clients.jedis.JedisCluster;
+import redis.clients.jedis.JedisPool;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static org.sifrproject.configuration.CUIProcessorConfigurationConstants.*;
 
 /**
  * Hello world!
  */
-@SuppressWarnings("ClassWithTooManyFields")
-public final class OntologyCUIProcessor implements OntologyProcessor {
-    private static final Logger logger = LoggerFactory.getLogger(OntologyCUIProcessor.class);
 
-    //Configuration constants
-    public static final String CONFIG_SOURCE_ENDPOINT = "config.source_endpoint";
-    private static final String CONFIG_TARGET_ENDPOINT = "config.target_endpoint";
-    private static final String CONFIG_MAPPINGS_ENDPOINT = "config.mappings_endpoint";
-    private static final String CONFIG_UMLS_JDBC = "config.umls_jdbc";
-    private static final String CONFIG_UMLS_USER = "config.umls_user";
-    private static final String CONFIG_UMLS_PASSWORD = "config.umls_password";
-    private static final String CONFIG_UMLS_DB = "config.umls_db";
-    private static final String CONFIG_REDIS_HOST = "config.redis_host";
-    private static final String CONFIG_REDIS_CLUSTER_BASE_PORT = "config.redis_cluster_base_port";
-    private static final String CONFIG_REDIS_CLUSTER_NODES = "config.redis_cluster_nodes";
+@SuppressWarnings({"OverlyCoupledClass", "ClassWithTooManyFields"})
+public final class OntologyCUIProcessor extends AbstractOntologyProcessor {
 
-    private static final String CUI_ADDED_AUTOMATICALLY_NOTE = "The CUI(s) and TUI(s) have been added through an automated matching process";
+    private static final String CUI_ADDED_AUTOMATICALLY_NOTE = "Le LIRMM a enrichi ce concept en CUI et TUI par un processus automatique";
 
-    private final StatsHandler ontologyStats;
-
-    private final OntologyDelegate ontologyDelegate;
     private final UMLSDelegate umlsDelegate;
 
     private final Map<String, Collection<String>> cuisToAdd;
     private final Map<String, Collection<String>> tuisToAdd;
+    private final Map<String, String> codesToAdd;
+
+    private final Map<String, Collection<String>> cuisToPurgeFromAltLabel;
+
+    private final Collection<Mapping> mappingsToAdd;
 
     private final List<String> cuiAddedNotesToAdd;
 
@@ -63,50 +66,28 @@ public final class OntologyCUIProcessor implements OntologyProcessor {
     private final AtomicInteger progressCount;
     private int totalClasses;
 
+    private final CodeFinder codeFinder;
 
 
-    @SuppressWarnings("IOResourceOpenedButNotSafelyClosed")
-    private OntologyCUIProcessor(final Properties properties) {
+    @SuppressWarnings({"IOResourceOpenedButNotSafelyClosed", "resource", "all"})
+    private OntologyCUIProcessor(final Properties properties, final UMLSDelegate umlsDelegate, final CUIOntologyDelegate sourceDelegate, final CUIOntologyDelegate targetDelegate, final OntologyMappingDelegate mappingDelegate, final StatsHandler ontologyStats, final PooledTermSimilarityRanker termSimilarityRanker) {
+        super(ontologyStats, sourceDelegate, targetDelegate, mappingDelegate);
+        this.umlsDelegate = umlsDelegate;
         cuisToAdd = new HashMap<>();
         tuisToAdd = new HashMap<>();
+        cuisToPurgeFromAltLabel = new HashMap<>();
+        mappingsToAdd = new ArrayList<>();
         cuiAddedNotesToAdd = new ArrayList<>(10000);
+        codesToAdd = new HashMap<>();
 
         progressCount = new AtomicInteger();
 
-        logger.info("Initializing UMLS SQL Interface...");
+        this.termSimilarityRanker = termSimilarityRanker;
 
-        final JedisCluster jedisCluster = initializeRedisCluster(
-                properties.getProperty(CONFIG_REDIS_HOST),
-                Integer.valueOf(properties.getProperty(CONFIG_REDIS_CLUSTER_BASE_PORT)),
-                Integer.valueOf(properties.getProperty(CONFIG_REDIS_CLUSTER_NODES))
-        );
+        final String ontologyName = sourceDelegate.getOntologyName();
 
+        codeFinder = new CompositeCodeFinder(sourceDelegate);
 
-        /*
-         * Creating the UMLS delegate to access UMLS over SQL
-         */
-        final String jdbc = properties.getProperty(CONFIG_UMLS_JDBC);
-        final String dbUser = properties.getProperty(CONFIG_UMLS_USER);
-        final String dbpass = properties.getProperty(CONFIG_UMLS_PASSWORD);
-        final String dbumls = properties.getProperty(CONFIG_UMLS_DB);
-        umlsDelegate = new SQLUMLSDelegate(jdbc, dbUser, dbpass, dbumls, jedisCluster);
-
-
-        logger.info("Initializing Source, Mappings and Target ontologies...");
-            /*
-             * Instantiating target and mappings models, can be a file or a Jena triple database (TDB)
-             */
-        final String sourceEndpoint = properties.getProperty(CONFIG_SOURCE_ENDPOINT);
-        final String targetEndpoint = properties.getProperty(CONFIG_TARGET_ENDPOINT);
-        final String mappingsEndpoint = properties.getProperty(CONFIG_MAPPINGS_ENDPOINT);
-
-        final String outputFileSuffix = properties.getProperty(DefaultCommandlineHandler.CONFIG_OUTPUT_FILE_SUFFIX);
-
-        ontologyDelegate = new OntologyDelegateImpl(mappingsEndpoint, targetEndpoint, sourceEndpoint, outputFileSuffix, jedisCluster);
-        final String ontologyName = ontologyDelegate.getOntologyName();
-
-        logger.info("Initializing similarity ranker...");
-        termSimilarityRanker = new TverskiTermSimilarityRanker(jedisCluster);
 
         try {
             noCUIConceptsWriter = new PrintWriter(ontologyName + "_concepts_without_cui.txt");
@@ -114,52 +95,29 @@ public final class OntologyCUIProcessor implements OntologyProcessor {
             logger.error(e.getLocalizedMessage());
         }
 
-        if (properties.containsKey(DefaultCommandlineHandler.CONFIG_DISAMBIGUATE)) {
+        if (properties.containsKey(CONFIG_DISAMBIGUATE)) {
             disambiguate = true;
         }
-        if (properties.containsKey(DefaultCommandlineHandler.CONFIG_MATCH)) {
+        if (properties.containsKey(CONFIG_MATCH)) {
             match = true;
         }
-
-        logger.info("Initializing statistics module...");
-        ontologyStats = new CUIOntologyStats(ontologyName);
-    }
-
-    private JedisCluster initializeRedisCluster(final String host, final int startPort, final int numberOfNodes){
-        final Set<HostAndPort> jedisClusterNodes = new HashSet<>();
-        for(int i=1;i<=numberOfNodes;i++) {
-            jedisClusterNodes.add(new HostAndPort(host, startPort+i));
-        }
-        return new JedisCluster(jedisClusterNodes);
     }
 
 
-    /**
-     * Process the ontology classes to look for CUIs and TUIs
-     */
     @Override
-    public void processOntology() {
-        logger.info("Loading class list in memory...");
-        final List<OntClass> classList = ontologyDelegate.getSourceClasses();
-        totalClasses = classList.size();
-        logger.info("Processing {} classes...", totalClasses);
-        //Iterate over all classes in parallel, automatically dispatched by the java stream on all available CPUs
-        final Stream<OntClass> ontClassStream = classList.parallelStream();
-        ontClassStream.forEachOrdered(this::processClass);
-        logger.info("Done!");
-        logger.info("Writing statistics to file...");
-        //Writing stats
-        ontologyStats.writeStatistics();
-    }
-
-    private void processClass(final OntClass thisClass) {
-        ontologyStats.incrementStatistic(CUIOntologyStats.TOTAL_CLASS_COUNT_STATISTIC);
+    protected void processSourceClass(final OntClass thisClass) {
+        incrementStatistic(CUIOntologyStats.TOTAL_CLASS_COUNT_STATISTIC);
         logger.debug(String.format("Processing: %s", thisClass));
         final Collection<String> cuis = processCUIs(thisClass);
         processTUIs(thisClass, cuis);
-        final double progress = (progressCount.incrementAndGet()/(double) totalClasses)*100;
+        final double progress = getPercentProgress();
         //noinspection UseOfSystemOutOrSystemErr,HardcodedLineSeparator
-        System.out.print(String.format("\rProcessing %.2f%%",progress));
+        System.out.print(String.format("\rProcessing %.2f%%", progress));
+    }
+
+    @Override
+    protected void processTargetClass(final OntClass thisClass) {
+
     }
 
     /**
@@ -172,47 +130,80 @@ public final class OntologyCUIProcessor implements OntologyProcessor {
     private Collection<String> processCUIs(final RDFNode thisClass) {
 
         final Collection<String> cuis = new ArrayList<>();
-        ontologyDelegate.cuisFromSourceModel(thisClass.toString(), cuis);
+        sourceDelegate.getCUIs(thisClass.toString(), cuis);
+
+        final List<Mapping> mappings = mappingDelegate.sourceMappings(thisClass.toString());
+        //Adding to mapping update list
+        mappingsToAdd.addAll(mappings);
+
+        final String code = codeFinder.getCode(thisClass.toString());
+        if(code!=null) {
+            codesToAdd.put(thisClass.toString(), code);
+        }
+
         if (cuis.isEmpty()) {
-            ontologyStats.incrementStatistic(CUIOntologyStats.CLASSES_WITHOUT_CUI_STATISTIC);
+            incrementStatistic(CUIOntologyStats.CLASSES_WITHOUT_CUI_STATISTIC);
             logger.debug("\tLooking for CUIs...");
-            cuis.addAll(findCUIs(thisClass.toString()));
+            cuis.addAll(findCUIs(thisClass.toString(),mappings));
         } else {
-            logger.info("\t{} CUIs found!", cuis.size());
+            logger.debug("\t{} CUIs found!", cuis.size());
         }
 
-        if (cuis.isEmpty() && match) {
-            logger.debug("\tFalling back on UMLS to find CUIs...");
-            disambiguate(cuis, thisClass);
-            if (!cuis.isEmpty()) {
-                cuiAddedNotesToAdd.add(thisClass.toString());
-            }
-        }
-
-        //Too many CUIs, trying to use UMLS to determine the most relevant ones
-        final Collection<String> ambiguousCuis = new ArrayList<>(cuis);
-        if (cuis.size() > 1) {
-            ontologyStats.incrementStatistic(CUIOntologyStats.CLASSES_WITH_AMBIGUOUS_CUI_STATISTIC);
-            logger.debug("Ambiguous CUIs");
-
-            disambiguate(ambiguousCuis, thisClass);
-            if (disambiguate) {
-                cuis.clear();
-                cuis.addAll(ambiguousCuis);
-            }
-        }
+        handleAmbiguity(cuis,code,thisClass);
 
         logger.debug("\tAdding {} CUIs to model...", cuis.size());
         synchronized (cuisToAdd) {
+            if (!cuis.isEmpty()) {
+                cuiAddedNotesToAdd.add(thisClass.toString());
+            }
             cuisToAdd.put(thisClass.toString(), cuis);
         }
         return cuis;
     }
 
-    @SuppressWarnings({"unused", "FeatureEnvy"})
+    private void handleAmbiguity(final Collection<String> cuis, final String code, final RDFNode thisClass){
+
+        if (cuis.isEmpty() && match) {
+            logger.debug("\tFalling back on UMLS to find CUIs...");
+            disambiguate(cuis, thisClass);
+        }
+
+        //Too many CUIs, trying to use UMLS to determine the most relevant ones
+        final Collection<String> ambiguousCuis = new ArrayList<>(cuis);
+        if (cuis.size() > 1) {
+            incrementStatistic(CUIOntologyStats.CLASSES_WITH_AMBIGUOUS_CUI_STATISTIC);
+            logger.debug("Ambiguous CUIs");
+
+            if (!cuis.isEmpty()) {
+                compareCUIsToUMLS(code, cuis);
+            }
+
+            if (disambiguate) {
+                disambiguate(ambiguousCuis, thisClass);
+                cuis.clear();
+                cuis.addAll(ambiguousCuis);
+            }
+        }
+    }
+
+    @SuppressWarnings("FeatureEnvy")
+    private void compareCUIsToUMLS(final String code, final Collection<String> cuis) {
+        if (code != null) {
+            incrementStatistic(CUIOntologyStats.UMLS_CODES_FOUND);
+            final Collection<String> umlsCUIs = umlsDelegate.getUMLSCUIs(code, UMLSLanguageCode.FRENCH);
+            if (umlsCUIs.size() > cuis.size()) {
+                incrementStatistic(CUIOntologyStats.CLASSES_WITH_LESS_CUIS_THAN_UMLS);
+            } else if (umlsCUIs.size() < cuis.size()) {
+                incrementStatistic(CUIOntologyStats.CLASSES_WITH_MORE_CUIS_THAN_UMLS);
+            }
+            logger.debug("{}", umlsCUIs.size());
+        }
+    }
+
+    @SuppressWarnings("FeatureEnvy")
     private void disambiguate(final Collection<String> cuis, final RDFNode thisClass) {
 
-        final String conceptDescription = ontologyDelegate.conceptLabelFromSourceModel(thisClass.asResource());
+        final String conceptDescription = sourceDelegate.getConceptLabel(thisClass.toString());
         final List<CUITerm> conceptNameCUIMap = (cuis.isEmpty()) ?
                 umlsDelegate.getCUIConceptNameMap(UMLSLanguageCode.FRENCH) :
                 umlsDelegate.getCUIConceptNameMap(UMLSLanguageCode.FRENCH, cuis);
@@ -221,16 +212,6 @@ public final class OntologyCUIProcessor implements OntologyProcessor {
             termSimilarityRanker.rankBySimilarity(conceptNameCUIMap, conceptDescription);
 
             final CUITerm cuiTerm = conceptNameCUIMap.get(0);
-            if (!cuis.isEmpty()) {
-                final Collection<String> umlsCUIs = umlsDelegate.getUMLSCUIs(UMLSLanguageCode.FRENCH, cuiTerm.getCUI(), cuiTerm.getTerm());
-                if(umlsCUIs.size()>conceptNameCUIMap.size()){
-                    ontologyStats.incrementStatistic(CUIOntologyStats.CLASSES_WITH_LESS_CUIS_THAN_UMLS);
-                } else {
-                    ontologyStats.incrementStatistic(CUIOntologyStats.CLASSES_WITH_MORE_CUIS_THAN_UMLS);
-                }
-                logger.debug("{}", umlsCUIs.size());
-            }
-
             cuis.clear();
             cuis.add(cuiTerm.getCUI());
         }
@@ -244,26 +225,33 @@ public final class OntologyCUIProcessor implements OntologyProcessor {
      * @return A collection of retrieved CUIs
      */
     @SuppressWarnings({"FeatureEnvy", "LawOfDemeter"})
-    private Collection<String> findCUIs(final String classURI) {
+    private Collection<String> findCUIs(final String classURI, final Collection<Mapping> mappings) {
 
         logger.debug("\t\tIn altLabel...");
-        final List<String> cuis = new ArrayList<>(ontologyDelegate.findCUIsInAltLabel(classURI));
+        final List<String> cuis = new ArrayList<>(sourceDelegate.findCUIsInAltLabel(classURI));
         if (cuis.isEmpty()) {
             logger.debug("\t\tIn mappings...");
-            cuis.addAll(ontologyDelegate.findCUIsFromMappings(classURI));
+
+
+            final Stream<Mapping> stream = mappings.stream();
+            final Stream<String> stringStream = stream.map(Mapping::getTargetClass);
+            final Set<String> mappingClasses = stringStream.collect(Collectors.toSet());
+            targetDelegate.getCUIs(mappingClasses, cuis);
+
             if (cuis.isEmpty()) {
                 //noinspection SynchronizeOnNonFinalField
                 synchronized (noCUIConceptsWriter) {
                     noCUIConceptsWriter.println(classURI);
                     noCUIConceptsWriter.flush();
                 }
-                ontologyStats.incrementStatistic(CUIOntologyStats.CLASSES_REMAINING_WITHOUT_CUI_STATISTIC);
+                incrementStatistic(CUIOntologyStats.CLASSES_REMAINING_WITHOUT_CUI_STATISTIC);
             } else {
-                ontologyStats.incrementStatistic(CUIOntologyStats.CLASSES_WITH_CUI_IN_MAPPINGS_STATISTIC);
+                incrementStatistic(CUIOntologyStats.CLASSES_WITH_CUI_IN_MAPPINGS_STATISTIC);
             }
         } else {
             logger.debug("\t\t Found {} CUIs in altLabel.", cuis.size());
-            ontologyStats.incrementStatistic(CUIOntologyStats.CLASSES_WITH_CUI_IN_ALT_LABEL_STATISTIC);
+            cuisToPurgeFromAltLabel.put(classURI, cuis);
+            incrementStatistic(CUIOntologyStats.CLASSES_WITH_CUI_IN_ALT_LABEL_STATISTIC);
         }
 
         return cuis;
@@ -278,21 +266,25 @@ public final class OntologyCUIProcessor implements OntologyProcessor {
      * @param cuis      The CUIs found for the class
      */
     private void processTUIs(final RDFNode thisClass, final Collection<String> cuis) {
-        Collection<String> tuis;
+        final Collection<String> tuis;
         if (cuis.isEmpty()) {
             tuis = new ArrayList<>();
-            ontologyDelegate.tuisFromSourceModel(thisClass.toString(), tuis);
+            sourceDelegate.getTUIs(thisClass.toString(), tuis);
             if (tuis.isEmpty()) {
-                tuis = ontologyDelegate.findTUIsForMappings(thisClass.toString());
+                final List<Mapping> mappings = mappingDelegate.sourceMappings(thisClass.toString());
+                final Stream<Mapping> stream = mappings.stream();
+                final Stream<String> stringStream = stream.map(Mapping::getSourceClass);
+                final List<String> mappingClasses = stringStream.collect(Collectors.toList());
+                targetDelegate.getTUIs(mappingClasses, tuis);
                 if (tuis.isEmpty()) {
-                    ontologyStats.incrementStatistic(CUIOntologyStats.CLASSES_REMAINING_WITHOUT_TUI_STATISTIC);
+                    incrementStatistic(CUIOntologyStats.CLASSES_REMAINING_WITHOUT_TUI_STATISTIC);
                 }
             } else {
                 logger.debug("\t{} TUIs found!", cuis.size());
             }
         } else {
             tuis = umlsDelegate.getTUIsForCUIs(cuis);
-            ontologyStats.incrementStatistic(CUIOntologyStats.CLASSES_WITHOUT_TUI_STATISTIC);
+            incrementStatistic(CUIOntologyStats.CLASSES_WITHOUT_TUI_STATISTIC);
         }
         logger.debug("\tAdded {} TUIs", tuis.size());
         synchronized (tuisToAdd) {
@@ -303,34 +295,60 @@ public final class OntologyCUIProcessor implements OntologyProcessor {
     /**
      * Update the source model by adding the new CUIs and TUIs
      */
-    @Override
-    public void updateModel() {
+    @SuppressWarnings("FeatureEnvy")
+    private void updateModel() {
         progressCount.set(0);
-        final List<OntClass> sourceClasses = ontologyDelegate.getSourceClasses();
+        final List<OntClass> sourceClasses = sourceDelegate.getClasses();
         totalClasses = cuisToAdd.size() + cuiAddedNotesToAdd.size() + tuisToAdd.size() +
-                sourceClasses.size();
+                (2 * sourceClasses.size()) + mappingsToAdd.size() + codesToAdd.size();
         logger.info("Updating ontology model...");
 
         updateCUIs();
-        cleanCUIsFromAltLabelAndSynonyms();
+        cleanCUIsAltLabelsAndSynonyms(cuisToPurgeFromAltLabel.keySet());
         updateTUIs();
+        updateMappings();
+        updateCodeNotes();
+        cleanAltLabelsSameAsPrefLabels();
 
         logger.info("Done!");
 
         logger.info("Writing processed ontology file...");
         //Writing enriched model
-        ontologyDelegate.writeEnrichedModel();
+        sourceDelegate.writeModel();
     }
 
+    @SuppressWarnings("FeatureEnvy")
     private void updateCUIs() {
         for (final Map.Entry<String, Collection<String>> cuiEntry : cuisToAdd.entrySet()) {
             for (final String cui : cuiEntry.getValue()) {
-                ontologyDelegate.addCUIToSourceModel(cuiEntry.getKey(), cui);
+                sourceDelegate.addCUIToModel(cuiEntry.getKey(), cui);
             }
             printUpdateProgress();
         }
+
         for (final String classURI : cuiAddedNotesToAdd) {
-            ontologyDelegate.addSkosNote(classURI, CUI_ADDED_AUTOMATICALLY_NOTE);
+            sourceDelegate.addSkosProperty(classURI, CUI_ADDED_AUTOMATICALLY_NOTE , "changeNote");
+            printUpdateProgress();
+        }
+    }
+
+    @SuppressWarnings("FeatureEnvy")
+    private void updateMappings() {
+        for (final Mapping mapping : mappingsToAdd) {
+            sourceDelegate.addStatement(mapping.getSourceClass(), mapping.getProperty(), mapping.getTargetClass());
+            printUpdateProgress();
+        }
+    }
+
+    private void updateCodeNotes() {
+        final CodeFinder skosCodeFinder = new SKOSNotationCodeFinder(sourceDelegate);
+        for (final Map.Entry<String, String> stringStringEntry : codesToAdd.entrySet()) {
+            final String classURI = stringStringEntry.getKey();
+            final String code = stringStringEntry.getValue();
+            sourceDelegate.purgeCodeFromAltLabel(classURI,code,"fr");
+            if(skosCodeFinder.getCode(classURI)==null) {
+                sourceDelegate.addSkosProperty(classURI, code, "notation");
+            }
             printUpdateProgress();
         }
     }
@@ -338,23 +356,39 @@ public final class OntologyCUIProcessor implements OntologyProcessor {
     private void updateTUIs() {
         for (final Map.Entry<String, Collection<String>> tuiEntry : tuisToAdd.entrySet()) {
             for (final String tui : tuiEntry.getValue()) {
-                ontologyDelegate.addTUIToSourceModel(tuiEntry.getKey(), tui);
+                sourceDelegate.addTUIToModel(tuiEntry.getKey(), tui);
             }
             printUpdateProgress();
         }
     }
 
-    private void cleanCUIsFromAltLabelAndSynonyms() {
-        final List<OntClass> classes = ontologyDelegate.getSourceClasses();
-        for (final OntClass ontClass : classes) {
-            ontologyDelegate.purgeCUIsFromAltLabelAndSynonyms(ontClass.toString(),UMLSLanguageCode.FRENCH.getShortCode());
+    private void cleanCUIsAltLabelsAndSynonyms(final Iterable<String> cuisToPurge) {
+        for (final String classURI : cuisToPurge) {
+            sourceDelegate.purgeCUIsFromAltLabel(
+                    classURI,
+                    cuisToPurgeFromAltLabel.get(classURI),
+                    UMLSLanguageCode.FRENCH.getShortCode()
+            );
+            printUpdateProgress();
         }
     }
 
-    private void printUpdateProgress(){
-        final double progress = (progressCount.incrementAndGet()/(double) totalClasses)*100;
+    private void cleanAltLabelsSameAsPrefLabels() {
+        for (final OntClass thisClass : sourceDelegate.getClasses()) {
+            sourceDelegate.cleanSkosAltLabel(thisClass.toString());
+            printUpdateProgress();
+        }
+    }
+
+    private void printUpdateProgress() {
+        final double progress = (progressCount.incrementAndGet() / (double) totalClasses) * 100;
         //noinspection UseOfSystemOutOrSystemErr,HardcodedLineSeparator
-        System.out.print(String.format("\rUpdating model %.2f%%",progress));
+        System.out.print(String.format("\rUpdating model %.2f%%", progress));
+    }
+
+    @Override
+    public void postProcess() {
+        updateModel();
     }
 
     @Override
@@ -363,18 +397,70 @@ public final class OntologyCUIProcessor implements OntologyProcessor {
     }
 
 
+    @SuppressWarnings("OverlyCoupledMethod")
     public static void main(final String[] args) throws IOException {
 
-        final Properties properties = new Properties();
-        properties.load(OntologyCUIProcessor.class.getResourceAsStream("/config.properties"));
+        VisualVMTools.delayUntilReturn();
 
-        final CommandlineHandler commandlineHandler = new DefaultCommandlineHandler();
+        final Properties properties = new Properties();
+        properties.load(OntologyCUIProcessor.class.getResourceAsStream("/cuiprocessor_config.properties"));
+
+        final CommandlineHandler commandlineHandler = new CUIProcessorCommandlineHandler();
         commandlineHandler.processCommandline(args, properties);
 
+        final JedisPool jedisPool = new JedisPool(
+                properties.getProperty(CONFIG_REDIS_HOST),
+                Integer.valueOf(properties.getProperty(CONFIG_REDIS_PORT))
+        );
 
-        final OntologyProcessor ontologyCUIProcessor = new OntologyCUIProcessor(properties);
-        ontologyCUIProcessor.processOntology();
-        ontologyCUIProcessor.updateModel();
+        /*
+         * Creating the UMLS delegate to access UMLS over SQL
+         */
+        final String jdbc = properties.getProperty(CONFIG_UMLS_JDBC);
+        final String dbUser = properties.getProperty(CONFIG_UMLS_USER);
+        final String dbpass = properties.getProperty(CONFIG_UMLS_PASSWORD);
+        final String dbumls = properties.getProperty(CONFIG_UMLS_DB);
+        final UMLSDelegate umlsDelegate = new SQLUMLSDelegate(jdbc, dbUser, dbpass, dbumls, jedisPool);
+
+
+            /*
+             * Instantiating target and mappings models, can be a file or a Jena triple database (TDB)
+             */
+        final String sourceEndpoint = properties.getProperty(CONFIG_SOURCE_ENDPOINT);
+        final String targetEndpoint = properties.getProperty(CONFIG_TARGET_ENDPOINT);
+        final String mappingsEndpoint = properties.getProperty(CONFIG_MAPPINGS_ENDPOINT);
+
+        final String outputFileSuffix = properties.getProperty(CONFIG_OUTPUT_FILE_SUFFIX);
+
+        final CUIOntologyDelegate sourceDelegate = new CUIOntologyDelegateImpl(sourceEndpoint, outputFileSuffix, jedisPool);
+        final CUIOntologyDelegate targetDelegate = new CUIOntologyDelegateImpl(targetEndpoint, outputFileSuffix, jedisPool);
+
+        final String sourceName = sourceDelegate.getOntologyName();
+        final String targetName = targetDelegate.getOntologyName();
+
+        final OntologyMappingDelegate mappingDelegate = new DefaultOntologyMappingDelegate(
+                mappingsEndpoint,
+                sourceName,
+                targetName,
+                jedisPool
+        );
+
+
+        final StatsHandler ontologyStats = new CUIOntologyStats(sourceName + "_" + targetName);
+
+        final PooledTermSimilarityRanker termSimilarityRanker = new TverskiTermSimilarityRanker(jedisPool);
+
+        final OntologyProcessor ontologyCUIProcessor = new OntologyCUIProcessor(
+                properties,
+                umlsDelegate,
+                sourceDelegate,
+                targetDelegate,
+                mappingDelegate,
+                ontologyStats,
+                termSimilarityRanker
+        );
+        ontologyCUIProcessor.processSourceOntology();
+        ontologyCUIProcessor.postProcess();
         ontologyCUIProcessor.cleanUp();
     }
 

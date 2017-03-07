@@ -12,7 +12,10 @@ import java.util.List;
 import java.util.Map;
 
 @SuppressWarnings("PublicMethodNotExposedInInterface")
-public class OntologyStats implements StatsHandler {
+class OntologyStats implements StatsHandler {
+
+
+    public static final String UMLS_CODES_FOUND = "umlsCodesFound";
 
 
     private PrintStream statsOutput;
@@ -22,8 +25,9 @@ public class OntologyStats implements StatsHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(OntologyStats.class);
 
-    OntologyStats(final String ontologyName) {
-        final String fileName = "stats_" + ontologyName + ".csv";
+    OntologyStats(final String fileInfix) {
+        logger.info("Initializing statistics module...");
+        final String fileName = "stats_" + fileInfix + ".csv";
         try {
             statsOutput = new PrintStream(fileName, "UTF-8");
         } catch (final FileNotFoundException e) {
@@ -57,6 +61,7 @@ public class OntologyStats implements StatsHandler {
     @SuppressWarnings({"HardcodedFileSeparator", "LocalVariableOfConcreteClass"})
     @Override
     public final void writeStatistics() {
+        logger.info("Writing statistics to file...");
         //statsOutput.println("Ontology ,#Classes,w/o CUI,w/o TUI,CUI in altLabel,CUI in mappings, Ambiguous CUI, #Classes remaining without CUI, #Classes remaining without TUI");
         for(int i=0;i<statisticRegistry.size();i++){
             final Statistic statistic = statisticRegistry.get(i);

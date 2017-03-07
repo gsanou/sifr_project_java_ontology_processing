@@ -1,0 +1,11 @@
+config.redis_host=REDIS_CLUSTER_HOST
+config.redis_cluster_base_port=N #BASE PORT, NODE PORTS FROM N+1 TO N+K  
+config.redis_cluster_nodes=K #Number of cluster nodes
+config.target_endpoint=../data/ont/onttdb #ttl/rdf file or TDB endpoint
+config.mappings_endpoint=../data/ont/mappingstdb #ttl/rdf file or TDB endpoint
+
+
+config.umls_jdbc=jdbc:mysql://HOST:PORT?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&characterEncoding=utf-8
+config.umls_db=UMLSDATABASENAME
+config.umls_user=DBUSERT
+config.umls_password=DBPASSWORD

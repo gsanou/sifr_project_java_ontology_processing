@@ -3,7 +3,7 @@ package org.sifrproject.ontology.matching;
 import org.getalp.lexsema.similarity.signatures.DefaultSemanticSignatureFactory;
 import org.getalp.lexsema.similarity.signatures.SemanticSignature;
 import org.getalp.lexsema.util.Language;
-import org.sifrproject.ontology.UMLSLanguageCode;
+import org.sifrproject.ontology.umls.UMLSLanguageCode;
 
 public class CUITermImpl implements CUITerm {
 
