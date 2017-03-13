@@ -12,11 +12,12 @@ public interface OntologyDelegate {
 
     String getConceptLabel(final String classURI);
 
-    @SuppressWarnings("all")
+    void addSkosProperty(final String classURI, final String value, final String propertyName, final String languageCode);
     void addSkosProperty(final String classURI, final String value, final String propertyName);
 
     void addStatement(String sourceURI, String propertyURI, String targetURI);
     void addLiteralStatement(final String sourceURI, final String propertyURI, final String literal);
+    void addLiteralStatement(final String sourceURI, final String propertyURI, final String literal, final String languageCode);
 
     void writeModel();
 

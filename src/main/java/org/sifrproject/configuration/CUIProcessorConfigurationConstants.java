@@ -20,4 +20,6 @@ public final class CUIProcessorConfigurationConstants {
     public static final String CONFIG_DISAMBIGUATE = "config.disambiguate";
     public static final String CONFIG_MATCH = "config.match";
     public static final String CONFIG_LANGUAGE = "config.language";
+
+    public static final String CONFIG_ADD_CODE_TO_PREFLABEL = "config.add_code_to_preflabel";
 }

@@ -24,7 +24,7 @@
         <configuration>
           <archive>
             <manifest>
-              <mainClass>org.sifrproject.cli.OntologyCUIProcessor</mainClass>
+              <mainClass>org.sifrproject.cli.enrichment.OntologyCUIProcessor</mainClass>
             </manifest>
           </archive>
           <descriptorRefs>

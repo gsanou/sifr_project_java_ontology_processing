@@ -31,5 +31,5 @@ http://www.lirmm.fr/sifr/
   2. Create a TDB repository with the target ontology files
   3. Create a TDB repository with the mappings 
   4. Modify configuration parameters in src/main/resources/config.properties to specify the source/target/mappings repository and the database access credentials. 
-  5. Run the org.sifrproject.cli.OntologyCUIProcessor class, by specifying the output file extention, the format and the path to the ontology file to enritch. 
+  5. Run the org.sifrproject.cli.cui.OntologyCUIProcessor class, by specifying the output file extention, the format and the path to the ontology file to enritch. 
 

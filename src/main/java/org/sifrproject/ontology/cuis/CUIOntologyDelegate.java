@@ -26,4 +26,6 @@ public interface CUIOntologyDelegate extends OntologyDelegate {
 
     void cleanSkosAltLabel(final String classURI);
 
+    void addCodeToPrefLabel(final String classURI, final String code);
+
 }

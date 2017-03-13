@@ -4,6 +4,7 @@ import com.hp.hpl.jena.ontology.OntClass;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import org.sifrproject.cli.api.AbstractOntologyProcessor;
 import org.sifrproject.cli.api.OntologyProcessor;
+import org.sifrproject.cli.enrichment.OntologyCUIProcessor;
 import org.sifrproject.configuration.CommandlineHandler;
 import org.sifrproject.configuration.CUIProcessorCommandlineHandler;
 import org.sifrproject.ontology.code.CodeFinder;

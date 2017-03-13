@@ -35,7 +35,7 @@ public class BaseOntologyDelegate implements OntologyDelegate {
 
     private static final Logger logger = LoggerFactory.getLogger(BaseOntologyDelegate.class);
 
-    private static final String SKOS_CORE_PREF_LABEL_PROPERTY = OntologyPrefix.getURI(OWLOntologyCleaner.SKOS_PREF_LABEL);
+    protected static final String SKOS_CORE_PREF_LABEL_PROPERTY = OntologyPrefix.getURI(OWLOntologyCleaner.SKOS_PREF_LABEL);
     protected static final String SKOS_ALT_LABEL_PROPERTY = OntologyPrefix.getURI("skos:altLabel");
 
     private static final Pattern CONTAINS_DOT_PATTERN = Pattern.compile("\\.");
@@ -164,9 +164,16 @@ public class BaseOntologyDelegate implements OntologyDelegate {
 
 
     @Override
-    public void addSkosProperty(final String classURI, final String value, final String propertyName) {
-        addLiteralStatement(classURI, model.expandPrefix("skos:" + propertyName), value);
+    public void addSkosProperty(final String classURI, final String value, final String propertyName, final String languageCode) {
+        addLiteralStatement(classURI, model.expandPrefix("skos:" + propertyName), value,languageCode);
     }
+
+    @Override
+    public void addSkosProperty(final String classURI, final String value, final String propertyName) {
+        addLiteralStatement(classURI, model.expandPrefix("skos:" + propertyName),value);
+    }
+
+
 
     @Override
     public void addStatement(final String sourceURI, final String propertyURI, final String targetURI) {
@@ -181,6 +188,13 @@ public class BaseOntologyDelegate implements OntologyDelegate {
         final OntResource subject = getOrCreateResource(sourceURI);
         final OntProperty property = getOrCreateProperty(propertyURI);
         model.add(subject, property, literal);
+    }
+
+    @Override
+    public void addLiteralStatement(final String sourceURI, final String propertyURI, final String literal, final String languageCode) {
+        final OntResource subject = getOrCreateResource(sourceURI);
+        final OntProperty property = getOrCreateProperty(propertyURI);
+        model.add(subject, property, model.createLiteral(literal,languageCode));
     }
 
     @Override

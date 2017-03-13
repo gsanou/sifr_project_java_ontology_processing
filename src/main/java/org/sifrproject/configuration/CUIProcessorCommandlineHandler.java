@@ -24,6 +24,8 @@ public class CUIProcessorCommandlineHandler implements CommandlineHandler {
 
     private static final String HISTORY_NOTE_OPTION = "hn";
 
+    private static final String ADD_CODE_TO_PREFLABEL_OPTION = "cpl";
+
     private static final String BY_DEFAULT = " by default.";
 
 
@@ -40,6 +42,7 @@ public class CUIProcessorCommandlineHandler implements CommandlineHandler {
         options.addOption(DISAMBIGUATE_CUI_OPTION, false,"If present, disambiguates ambiguous CUIs");
         options.addOption(MATCH_MISSING_CUI_OPTION, false,"If present, tries to find missing CUI my matching prefLabel to all UMLS CUI descriptions");
         options.addOption(SOURCE_LANGUAGE_OPTION,true,"The language of the ontology to process (ontologyFileOrUrl)...");
+        options.addOption(ADD_CODE_TO_PREFLABEL_OPTION,false,"Add code to prefLabels");
     }
 
 
@@ -51,7 +54,7 @@ public class CUIProcessorCommandlineHandler implements CommandlineHandler {
         @SuppressWarnings("HardcodedFileSeparator") final String help =
                 "ontologyFileOrUrl must point on an OWL ontology (TURTLE, XML/RDF)";
         //noinspection HardcodedFileSeparator
-        formatter.printHelp("java -cp /path/to/jar org.sifrproject.cli.OntologyCUIProcessor [OPTIONS] ontologyFileOrUrl ...",
+        formatter.printHelp("java -cp /path/to/jar org.sifrproject.cli.cui.OntologyCUIProcessor [OPTIONS] ontologyFileOrUrl ...",
                 "With OPTIONS in:", options,
                 help, false);
     }
@@ -131,6 +134,10 @@ public class CUIProcessorCommandlineHandler implements CommandlineHandler {
 
         if(commandLine.hasOption(MATCH_MISSING_CUI_OPTION)){
             properties.put(CONFIG_MATCH,"true");
+        }
+
+        if(commandLine.hasOption(ADD_CODE_TO_PREFLABEL_OPTION)){
+            properties.put(CONFIG_ADD_CODE_TO_PREFLABEL, "true");
         }
 
     }

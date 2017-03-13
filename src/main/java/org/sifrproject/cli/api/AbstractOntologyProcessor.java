@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-public abstract class AbstractOntologyProcessor implements OntologyProcessor{
+public abstract class AbstractOntologyProcessor implements OntologyProcessor {
 
     @SuppressWarnings("all")
     protected AbstractOntologyProcessor(final StatsHandler ontologyStats, final CUIOntologyDelegate sourceDelegate, final CUIOntologyDelegate targetDelegate, final OntologyMappingDelegate mappingDelegate) {
