@@ -8,6 +8,7 @@ public final class CUIOntologyStats extends OntologyStats{
     public static final String CLASSES_WITHOUT_CUI_STATISTIC = "classesWithoutCUI";
     public static final String CLASSES_WITH_CUI_IN_ALT_LABEL_STATISTIC = "classesWithCUIInAltLabel";
     public static final String CLASSES_WITH_CUI_IN_MAPPINGS_STATISTIC = "classesWithCUIInMappings";
+    public static final String CLASSES_WITH_CUI_THROUGH_CODE_STATISTIC = "classesWithCUIThroughCode";
     public static final String CLASSES_WITH_AMBIGUOUS_CUI_STATISTIC = "classesWithAmbiguousCUI";
     public static final String CLASSES_REMAINING_WITHOUT_CUI_STATISTIC = "classesRemainingWithoutCUI";
     public static final String CLASSES_REMAINING_WITHOUT_TUI_STATISTIC = "classesRemainingWithoutTUI";
@@ -23,6 +24,7 @@ public final class CUIOntologyStats extends OntologyStats{
         registerStatistic(CLASSES_WITHOUT_TUI_STATISTIC, "w/o TUI");
         registerStatistic(CLASSES_WITH_CUI_IN_ALT_LABEL_STATISTIC, "CUI in altLabel");
         registerStatistic(CLASSES_WITH_CUI_IN_MAPPINGS_STATISTIC, "CUI in mappings");
+        registerStatistic(CLASSES_WITH_CUI_THROUGH_CODE_STATISTIC, "CUI found through UMLS code");
         registerStatistic(CLASSES_WITH_AMBIGUOUS_CUI_STATISTIC, "Ambiguous CUI");
         registerStatistic(UMLS_CODES_FOUND, "#UMLS Codes found");
         registerStatistic(CLASSES_WITH_MORE_CUIS_THAN_UMLS, "More CUIs than UMLS");

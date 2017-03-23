@@ -13,4 +13,5 @@ public interface UMLSDelegate {
 
     @SuppressWarnings({"OverlyNestedMethod", "OverlyLongMethod"})
     Collection<String> getUMLSCUIs(final String code, final UMLSLanguageCode languageCode);
+    public Collection<String> getUMLSCUIs(final String code);
 }

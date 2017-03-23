@@ -1,0 +1,310 @@
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:skos="http://www.w3.org/2004/02/skos/core#">
+
+    <skos:Concept rdf:about="http://chu-rouen.fr/cismef/CIM-10#(A00-B99)">
+        <skos:prefLabel xml:lang="fr">(A00-B99) - certaines maladies infectieuses et parasitaires</skos:prefLabel>
+        <skos:altLabel xml:lang="fr">Chapitre 1</skos:altLabel>
+        <skos:altLabel xml:lang="fr">Chapitre i</skos:altLabel>
+        <skos:altLabel xml:lang="fr">certaines maladies infectieuses et parasitaires</skos:altLabel>
+    </skos:Concept>
+
+
+    <skos:Concept rdf:about="http://chu-rouen.fr/cismef/CIM-10#(C00-D48)">
+        <skos:broader rdf:resource="http://chu-rouen.fr/cismef/CIM-10#ARBO"/>
+        <skos:prefLabel xml:lang="fr">(C00-D48) - tumeurs</skos:prefLabel>
+        <skos:altLabel xml:lang="fr">Chapitre 2</skos:altLabel>
+        <skos:altLabel xml:lang="fr">Chapitre ii</skos:altLabel>
+        <skos:altLabel xml:lang="fr">tumeurs</skos:altLabel>
+    </skos:Concept>
+
+
+    <skos:Concept rdf:about="http://chu-rouen.fr/cismef/CIM-10#(D50-D89)">
+        <skos:broader rdf:resource="http://chu-rouen.fr/cismef/CIM-10#ARBO"/>
+        <skos:prefLabel xml:lang="fr">(D50-D89) - maladies du sang et des organes hématopoïétiques et certains troubles
+            du système immunitaire
+        </skos:prefLabel>
+        <skos:altLabel xml:lang="fr">Chapitre 3</skos:altLabel>
+        <skos:altLabel xml:lang="fr">Chapitre iii</skos:altLabel>
+        <skos:altLabel xml:lang="fr">maladies du sang et des organes hématopoïétiques et certains troubles du système
+            immunitaire
+        </skos:altLabel>
+    </skos:Concept>
+
+
+    <skos:Concept rdf:about="http://chu-rouen.fr/cismef/CIM-10#(E00-E90)">
+        <skos:broader rdf:resource="http://chu-rouen.fr/cismef/CIM-10#ARBO"/>
+        <skos:prefLabel xml:lang="fr">(E00-E90) - maladies endocriniennes, nutritionnelles et métaboliques
+        </skos:prefLabel>
+        <skos:altLabel xml:lang="fr">Chapitre 4</skos:altLabel>
+        <skos:altLabel xml:lang="fr">Chapitre iv</skos:altLabel>
+        <skos:altLabel xml:lang="fr">maladies endocriniennes, nutritionnelles et métaboliques</skos:altLabel>
+    </skos:Concept>
+
+
+    <skos:Concept rdf:about="http://chu-rouen.fr/cismef/CIM-10#(F00-F99)">
+        <skos:broader rdf:resource="http://chu-rouen.fr/cismef/CIM-10#ARBO"/>
+        <skos:prefLabel xml:lang="fr">(F00-F99) - troubles mentaux et du comportement</skos:prefLabel>
+        <skos:altLabel xml:lang="fr">Chapitre 5</skos:altLabel>
+        <skos:altLabel xml:lang="fr">Chapitre v</skos:altLabel>
+        <skos:altLabel xml:lang="fr">troubles mentaux et du comportement</skos:altLabel>
+    </skos:Concept>
+
+
+    <skos:Concept rdf:about="http://chu-rouen.fr/cismef/CIM-10#(G00-G99)">
+        <skos:broader rdf:resource="http://chu-rouen.fr/cismef/CIM-10#ARBO"/>
+        <skos:prefLabel xml:lang="fr">(G00-G99) - maladies du système nerveux</skos:prefLabel>
+        <skos:altLabel xml:lang="fr">Chapitre 6</skos:altLabel>
+        <skos:altLabel xml:lang="fr">Chapitre vi</skos:altLabel>
+        <skos:altLabel xml:lang="fr">maladies du système nerveux</skos:altLabel>
+    </skos:Concept>
+
+
+    <skos:Concept rdf:about="http://chu-rouen.fr/cismef/CIM-10#(H00-H59)">
+        <skos:broader rdf:resource="http://chu-rouen.fr/cismef/CIM-10#ARBO"/>
+        <skos:prefLabel xml:lang="fr">(H00-H59) - maladies de l&apos;oeil et de ses annexes</skos:prefLabel>
+        <skos:altLabel xml:lang="fr">Chapitre 7</skos:altLabel>
+        <skos:altLabel xml:lang="fr">Chapitre vii</skos:altLabel>
+        <skos:altLabel xml:lang="fr">maladies de l&apos;oeil et de ses annexes</skos:altLabel>
+    </skos:Concept>
+
+
+    <skos:Concept rdf:about="http://chu-rouen.fr/cismef/CIM-10#(H60-H95)">
+        <skos:broader rdf:resource="http://chu-rouen.fr/cismef/CIM-10#ARBO"/>
+        <skos:prefLabel xml:lang="fr">(H60-H95) - maladies de l&apos;oreille et de l&apos;apophyse mastoïde
+        </skos:prefLabel>
+        <skos:altLabel xml:lang="fr">Chapitre 8</skos:altLabel>
+        <skos:altLabel xml:lang="fr">Chapitre viii</skos:altLabel>
+        <skos:altLabel xml:lang="fr">maladies de l&apos;oreille et de l&apos;apophyse mastoïde</skos:altLabel>
+    </skos:Concept>
+
+
+    <skos:Concept rdf:about="http://chu-rouen.fr/cismef/CIM-10#(I00-I99)">
+        <skos:broader rdf:resource="http://chu-rouen.fr/cismef/CIM-10#ARBO"/>
+        <skos:prefLabel xml:lang="fr">(I00-I99) - maladies de l&apos;appareil circulatoire</skos:prefLabel>
+        <skos:altLabel xml:lang="fr">Chapitre 9</skos:altLabel>
+        <skos:altLabel xml:lang="fr">Chapitre ix</skos:altLabel>
+        <skos:altLabel xml:lang="fr">maladies de l&apos;appareil circulatoire</skos:altLabel>
+    </skos:Concept>
+
+
+    <skos:Concept rdf:about="http://chu-rouen.fr/cismef/CIM-10#(J00-J99)">
+        <skos:broader rdf:resource="http://chu-rouen.fr/cismef/CIM-10#ARBO"/>
+        <skos:prefLabel xml:lang="fr">(J00-J99) - maladies de l&apos;appareil respiratoire</skos:prefLabel>
+        <skos:altLabel xml:lang="fr">Chapitre 10</skos:altLabel>
+        <skos:altLabel xml:lang="fr">Chapitre x</skos:altLabel>
+        <skos:altLabel xml:lang="fr">maladies de l&apos;appareil respiratoire</skos:altLabel>
+    </skos:Concept>
+
+
+    <skos:Concept rdf:about="http://chu-rouen.fr/cismef/CIM-10#(K00-K93)">
+        <skos:broader rdf:resource="http://chu-rouen.fr/cismef/CIM-10#ARBO"/>
+        <skos:prefLabel xml:lang="fr">(K00-K93) - maladies de l&apos;appareil digestif</skos:prefLabel>
+        <skos:altLabel xml:lang="fr">Chapitre 11</skos:altLabel>
+        <skos:altLabel xml:lang="fr">Chapitre xi</skos:altLabel>
+        <skos:altLabel xml:lang="fr">maladies de l&apos;appareil digestif</skos:altLabel>
+    </skos:Concept>
+
+
+    <skos:Concept rdf:about="http://chu-rouen.fr/cismef/CIM-10#(L00-L99)">
+        <skos:broader rdf:resource="http://chu-rouen.fr/cismef/CIM-10#ARBO"/>
+        <skos:prefLabel xml:lang="fr">(L00-L99) - maladies de la peau et du tissu cellulaire sous-cutané
+        </skos:prefLabel>
+        <skos:altLabel xml:lang="fr">Chapitre 12</skos:altLabel>
+        <skos:altLabel xml:lang="fr">Chapitre xii</skos:altLabel>
+        <skos:altLabel xml:lang="fr">maladies de la peau et du tissu cellulaire sous-cutané</skos:altLabel>
+    </skos:Concept>
+
+
+    <skos:Concept rdf:about="http://chu-rouen.fr/cismef/CIM-10#(M00-M99)">
+        <skos:broader rdf:resource="http://chu-rouen.fr/cismef/CIM-10#ARBO"/>
+        <skos:prefLabel xml:lang="fr">(M00-M99) - maladies du système ostéo-articulaire, des muscles et du tissu
+            conjonctif
+        </skos:prefLabel>
+        <skos:altLabel xml:lang="fr">Chapitre 13</skos:altLabel>
+        <skos:altLabel xml:lang="fr">Chapitre xiii</skos:altLabel>
+        <skos:altLabel xml:lang="fr">maladies du système ostéo-articulaire, des muscles et du tissu conjonctif
+        </skos:altLabel>
+    </skos:Concept>
+
+
+    <skos:Concept rdf:about="http://chu-rouen.fr/cismef/CIM-10#(N00-N99)">
+        <skos:broader rdf:resource="http://chu-rouen.fr/cismef/CIM-10#ARBO"/>
+        <skos:prefLabel xml:lang="fr">(N00-N99) - maladies de l&apos;appareil génito-urinaire</skos:prefLabel>
+        <skos:altLabel xml:lang="fr">Chapitre 14</skos:altLabel>
+        <skos:altLabel xml:lang="fr">Chapitre xiv</skos:altLabel>
+        <skos:altLabel xml:lang="fr">maladies de l&apos;appareil génito-urinaire</skos:altLabel>
+    </skos:Concept>
+
+
+    <skos:Concept rdf:about="http://chu-rouen.fr/cismef/CIM-10#(O00-O99)">
+        <skos:broader rdf:resource="http://chu-rouen.fr/cismef/CIM-10#ARBO"/>
+        <skos:prefLabel xml:lang="fr">(O00-O99) - grossesse, accouchement et puerpéralité</skos:prefLabel>
+        <skos:altLabel xml:lang="fr">Chapitre 15</skos:altLabel>
+        <skos:altLabel xml:lang="fr">Chapitre xv</skos:altLabel>
+        <skos:altLabel xml:lang="fr">grossesse, accouchement et puerpéralité</skos:altLabel>
+    </skos:Concept>
+
+
+    <skos:Concept rdf:about="http://chu-rouen.fr/cismef/CIM-10#(P00-P96)">
+        <skos:broader rdf:resource="http://chu-rouen.fr/cismef/CIM-10#ARBO"/>
+        <skos:prefLabel xml:lang="fr">(P00-P96) - certaines affections dont l&apos;origine se situe dans la période
+            périnatale
+        </skos:prefLabel>
+        <skos:altLabel xml:lang="fr">Chapitre 16</skos:altLabel>
+        <skos:altLabel xml:lang="fr">Chapitre xvi</skos:altLabel>
+        <skos:altLabel xml:lang="fr">certaines affections dont l&apos;origine se situe dans la période périnatale
+        </skos:altLabel>
+    </skos:Concept>
+
+
+    <rdf:Description rdf:about="http://chu-rouen.fr/cismef/CIM-10#(Q00-Q99)">
+        <skos:prefLabel xml:lang="fr">(Q00-Q99) - malformations congénitales et anomalies chromosomiques
+        </skos:prefLabel>
+        <skos:altLabel xml:lang="fr">Chapitre 17</skos:altLabel>
+        <skos:altLabel xml:lang="fr">Chapitre xvii</skos:altLabel>
+        <skos:altLabel xml:lang="fr">malformations congénitales et anomalies chromosomiques</skos:altLabel>
+    </rdf:Description>
+
+
+    <skos:Concept rdf:about="http://chu-rouen.fr/cismef/CIM-10#(R00-R99)">
+        <skos:broader rdf:resource="http://chu-rouen.fr/cismef/CIM-10#ARBO"/>
+        <skos:prefLabel xml:lang="fr">(R00-R99) - symptômes, signes et résultats anormaux d&apos;examens cliniques et de
+            laboratoire, non classés ailleurs
+        </skos:prefLabel>
+        <skos:definition xml:lang="fr">Ce chapitre comprend les symptômes, les signes et les résultats anormaux dexamens
+            cliniques ou autres, ainsi que les états morbides mal définis pour lesquels aucun diagnostic na été formulé
+            qui puisse être classé ailleurs.&lt;P&gt;Les signes et symptômes qui orientent assez sérieusement vers un
+            diagnostic donné sont classés dans une catégorie des autres chapitres de la Classification. En général, les
+            catégories de ce chapitre comprennent les états et symptômes moins nettement définis qui, sans que le cas
+            ait été suffisamment étudié pour permettre un diagnostic définitif, orientent vers deux maladies ou plus ou
+            vers deux appareils ou plus du corps humain. Presque toutes les catégories de ce chapitre pourraient être
+            désignées &quot;sans autre indication&quot;, &quot;détiologie inconnue&quot; ou &quot;transitoire&quot;. On
+            consultera lIndex alphabétique pour décider des symptômes et des signes qui appartiennent à ce chapitre et
+            non à un autre. Les sous-catégories numérotées .8 sont généralement réservées aux autres symptômes qui sy
+            rapportent et qui ne peuvent être classés ailleurs dans la Classification.&lt;P&gt;Les affections et les
+            signes ou symptômes classés dans les catégories R00-R99 se rapportent a) aux cas pour lesquels aucun
+            diagnostic plus précis na pu être porté, même après examen de tous les faits sy rapportant; b) aux signes ou
+            symptômes existants lors de la première consultation, qui se sont avérés être transitoires et dont les
+            causes nont pu être déterminées; c) aux diagnostics provisoires chez un malade qui nest pas revenu pour
+            dautres investigations ou soins; d) aux cas de malades dirigés ailleurs pour examens complémentaires ou
+            traitement avant que le diagnostic ne soit établi; e) aux cas dans lesquels un diagnostic plus précis na pu
+            être établi pour toute autre raison et f) à certains symptômes pour lesquels des renseignements
+            supplémentaires sont fournis, symptômes qui par eux-mêmes représentent des problèmes importants de soins
+            médicaux.
+        </skos:definition>
+        <skos:altLabel xml:lang="fr">Chapitre 18</skos:altLabel>
+        <skos:altLabel xml:lang="fr">Chapitre xviii</skos:altLabel>
+        <skos:definition xml:lang="fr">ce chapitre comprend les symptômes, les signes et les résultats anormaux dexamens
+            cliniques ou autres, ainsi que les états morbides mal définis pour lesquels aucun diagnostic na été formulé
+            qui puisse être classé ailleurs.&lt;p&gt;les signes et symptômes qui orientent assez sérieusement vers un
+            diagnostic donné sont classés dans une catégorie des autres chapitres de la classification. en général, les
+            catégories de ce chapitre comprennent les états et symptômes moins nettement définis qui, sans que le cas
+            ait été suffisamment étudié pour permettre un diagnostic définitif, orientent vers deux maladies ou plus ou
+            vers deux appareils ou plus du corps humain. presque toutes les catégories de ce chapitre pourraient être
+            désignées &quot;sans autre indication&quot;, &quot;détiologie inconnue&quot; ou &quot;transitoire&quot;. on
+            consultera lindex alphabétique pour décider des symptômes et des signes qui appartiennent à ce chapitre et
+            non à un autre. les sous-catégories numérotées .8 sont généralement réservées aux autres symptômes qui sy
+            rapportent et qui ne peuvent être classés ailleurs dans la classification.&lt;p&gt;les affections et les
+            signes ou symptômes classés dans les catégories r00-r99 se rapportent a) aux cas pour lesquels aucun
+            diagnostic plus précis na pu être porté, même après examen de tous les faits sy rapportant; b) aux signes ou
+            symptômes existants lors de la première consultation, qui se sont avérés être transitoires et dont les
+            causes nont pu être déterminées; c) aux diagnostics provisoires chez un malade qui nest pas revenu pour
+            dautres investigations ou soins; d) aux cas de malades dirigés ailleurs pour examens complémentaires ou
+            traitement avant que le diagnostic ne soit établi; e) aux cas dans lesquels un diagnostic plus précis na pu
+            être établi pour toute autre raison et f) à certains symptômes pour lesquels des renseignements
+            supplémentaires sont fournis, symptômes qui par eux-mêmes représentent des problèmes importants de soins
+            médicaux.
+        </skos:definition>
+        <skos:altLabel xml:lang="fr">symptômes, signes et résultats anormaux d&apos;examens cliniques et de laboratoire,
+            non classés ailleurs
+        </skos:altLabel>
+    </skos:Concept>
+
+
+    <skos:Concept rdf:about="http://chu-rouen.fr/cismef/CIM-10#(S00-T98)">
+        <skos:broader rdf:resource="http://chu-rouen.fr/cismef/CIM-10#ARBO"/>
+        <skos:prefLabel xml:lang="fr">(S00-T98) - Lésion traumatique de fascias, de muscles et de tendons comprenant :
+            arrachement lacération foulure de fascias, de muscles et de tendons rupture traumatique sectio
+        </skos:prefLabel>
+        <skos:altLabel xml:lang="fr">Chapitre 19</skos:altLabel>
+        <skos:altLabel xml:lang="fr">Chapitre xix</skos:altLabel>
+        <skos:definition xml:lang="fr">Le chapitre utilise la section S pour le codage de différents types de
+            traumatismes localisés à une seule région du corps et la section T pour le codage des traumatismes ayant des
+            localisations multiples ou de siège non précisé, ainsi que les empoisonnements et certaines autres
+            conséquences de causes externes.&lt;P&gt;Dans les titres désignant des lésions traumatiques multiples, le
+            mot &quot;avec&quot; indique lassociation des deux localisations mentionnées et le mot &quot;et&quot;
+            indique que lon a affaire à lune ou lautre des deux localisations ou aux deux à la fois.&lt;P&gt;Le principe
+            du codage multiple des lésions traumatiques sera appliqué chaque fois que cela est possible. On a prévu des
+            catégories de combinaisons pour les traumatismes multiples lorsque la nature de chacun deux nest pas
+            indiquée de façon précise ou pour la mise en tableaux des causes principales quand il est plus commode de
+            nenregistrer quune seule cause. En dehors de ces cas, les divers composants des lésions traumatiquesseront
+            codés séparément. Se référer également aux règles et instructions du Volume 2 concernant le codage de la
+            morbidité ou de la mortalité.
+        </skos:definition>
+        <skos:definition xml:lang="fr">le chapitre utilise la section s pour le codage de différents types de
+            traumatismes localisés à une seule région du corps et la section t pour le codage des traumatismes ayant des
+            localisations multiples ou de siège non précisé, ainsi que les empoisonnements et certaines autres
+            conséquences de causes externes.&lt;p&gt;dans les titres désignant des lésions traumatiques multiples, le
+            mot &quot;avec&quot; indique lassociation des deux localisations mentionnées et le mot &quot;et&quot;
+            indique que lon a affaire à lune ou lautre des deux localisations ou aux deux à la fois.&lt;p&gt;le principe
+            du codage multiple des lésions traumatiques sera appliqué chaque fois que cela est possible. on a prévu des
+            catégories de combinaisons pour les traumatismes multiples lorsque la nature de chacun deux nest pas
+            indiquée de façon précise ou pour la mise en tableaux des causes principales quand il est plus commode de
+            nenregistrer quune seule cause. en dehors de ces cas, les divers composants des lésions traumatiques seront
+            codés séparément. se référer également aux règles et instructions du volume 2 concernant le codage de la
+            morbidité ou de la mortalité.
+        </skos:definition>
+        <skos:altLabel xml:lang="fr">lésion traumatique de fascias, de muscles et de tendons comprenant : arrachement
+            lacération foulure de fascias, de muscles et de tendons rupture traumatique sectio
+        </skos:altLabel>
+    </skos:Concept>
+
+
+    <skos:Concept rdf:about="http://chu-rouen.fr/cismef/CIM-10#(V01-Y98)">
+        <skos:broader rdf:resource="http://chu-rouen.fr/cismef/CIM-10#ARBO"/>
+        <skos:prefLabel xml:lang="fr">(V01-Y98) - causes externes de morbidité et de mortalité</skos:prefLabel>
+        <skos:altLabel xml:lang="fr">Chapitre 20</skos:altLabel>
+        <skos:altLabel xml:lang="fr">Chapitre xx</skos:altLabel>
+        <skos:definition xml:lang="fr">Le présent chapitre, qui, dans les révisions précédentes de la CIM, constituait
+            une classification supplémentaire, permet la classification de toutes les causes externes responsables de
+            lésions traumatiques, dintoxications et dautres effets indésirables. Ses rubriques seront utilisées en
+            association avec les rubriques dautres chapitres de la Classification indiquant la nature de la lésion. Le
+            plus souvent, une rubrique du Chapitre XIX, Lésions traumatiques, empoisonnements et certaines autres
+            conséquences de causes externes (S00-T98), indiquera la lésion. Pour la mise en tableaux des causes de
+            décès, on utilisera de préférence un double classement, Chapitre XIX et Chapitre XX, mais, si cette mise en
+            tableaux doit être effectuée selon un code unique, on utilisera de préférence le code du Chapitre XX.
+            Dautres affections pouvant être imputées à des causes externes sont classées dans les Chapitres I à XVIII.
+            Dans ce cas, les rubriques du Chapitre XX seront utilisées uniquement à titre dinformation complémentaire
+            pour lanalyse des affections multiples. &lt;P&gt;Les rubriques pour les séquelles de causes externes de
+            morbidité et de mortalité sont classées en Y85-Y89.
+        </skos:definition>
+        <skos:altLabel xml:lang="fr">causes externes de morbidité et de mortalité</skos:altLabel>
+        <skos:definition xml:lang="fr">le présent chapitre, qui, dans les révisions précédentes de la cim, constituait
+            une classification supplémentaire, permet la classification de toutes les causes externes responsables de
+            lésions traumatiques, dintoxications et dautres effets indésirables. ses rubriques seront utilisées en
+            association avec les rubriques dautres chapitres de la classification indiquant la nature de la lésion. le
+            plus souvent, une rubrique du chapitre xix, lésions traumatiques, empoisonnements et certaines autres
+            conséquences de causes externes (s00-t98), indiquera la lésion. pour la mise en tableaux des causes de
+            décès, on utilisera de préférence un double classement, chapitre xix et chapitre xx, mais, si cette mise en
+            tableaux doit être effectuée selon un code unique, on utilisera de préférence le code du chapitre xx.
+            dautres affections pouvant être imputées à des causes externes sont classées dans les chapitres i à xviii.
+            dans ce cas, les rubriques du chapitre xx seront utilisées un iquement à titre dinformation complémentaire
+            pour lanalyse des affections multiples. &lt;p&gt;les rubriques pour les séquelles de causes externes de
+            morbidité et de mortalité sont classées en y85-y89.
+        </skos:definition>
+    </skos:Concept>
+
+
+    <skos:Concept rdf:about="http://chu-rouen.fr/cismef/CIM-10#(Z00-Z99)">
+        <skos:broader rdf:resource="http://chu-rouen.fr/cismef/CIM-10#ARBO"/>
+        <skos:prefLabel xml:lang="fr">(Z00-Z99) - facteurs influant sur l&apos;état de santé et motifs de recours aux
+            services de santé
+        </skos:prefLabel>
+        <skos:altLabel xml:lang="fr">Chapitre 21</skos:altLabel>
+        <skos:altLabel xml:lang="fr">Chapitre xxi</skos:altLabel>
+        <skos:altLabel xml:lang="fr">facteurs influant sur l&apos;état de santé et motifs de recours aux services de
+            santé
+        </skos:altLabel>
+    </skos:Concept>
+
+</rdf:RDF>

@@ -6,3 +6,4 @@
 @prefix icpc2p: <http://purl.bioontology.org/ontology/ICPC2P/> .
 @prefix icd: <http://who.int/icd#> .
 @prefix gold: <http://purl.org/linguistics/gold/> .
+@prefix	omv:  <http://omv.ontoware.org/2005/05/ontology#>

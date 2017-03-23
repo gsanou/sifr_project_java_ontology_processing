@@ -59,11 +59,12 @@ public class CUIOntologyDelegateImpl extends BaseOntologyDelegate implements CUI
     }
 
 
+    @SuppressWarnings("HardcodedFileSeparator")
     @Override
     public void addTUIToModel(final String classURI, final String tui) {
         synchronized (model) {
             addLiteralStatement(classURI, TUI_PROPERTY_URI, tui);
-            addStatement(classURI, HAS_STY_PROPERTY_URI, STY_URL_BASE + tui);
+            addStatement(classURI, HAS_STY_PROPERTY_URI, STY_URL_BASE + tui+"/");
         }
     }
 

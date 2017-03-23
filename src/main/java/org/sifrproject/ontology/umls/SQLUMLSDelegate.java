@@ -190,6 +190,32 @@ public class SQLUMLSDelegate implements UMLSDelegate {
         return codes;
     }
 
+    @SuppressWarnings({"OverlyNestedMethod", "OverlyLongMethod"})
+    @Override
+    public Collection<String> getUMLSCUIs(final String code) {
+        Collection<String> codes;
+        try(Jedis jedis = jedisPool.getResource()) {
+            final String key = CONCEPT_CODE_PREFIX + code;
+            codes = jedis.lrange(key, 0, -1);
+            if (codes.isEmpty() && !EmptyResultsCache.isEmpty(key, jedis)) {
+                //noinspection SynchronizeOnNonFinalField
+                synchronized (dataSource) {
+                    try (final Connection connection = dataSource.getConnection()) {
+                        try (final PreparedStatement statement = connection.prepareStatement("SELECT DISTINCT CUI FROM MRCONSO WHERE CODE = ?")) {
+                            statement.setString(1, code);
+                            codes = fetchPushListPreparedStatement(statement, key,jedis);
+                        } catch (final SQLException e) {
+                            logger.error(ERROR_MESSAGE_CANNOT_RUN_SQL_QUERY, e.getLocalizedMessage());
+                        }
+                    } catch (final SQLException e) {
+                        logger.error(e.getLocalizedMessage());
+                    }
+                }
+            }
+        }
+        return codes;
+    }
+
 
     private void populateTermList(final List<CUITerm> cuiTerms, final Map<String, String> conceptNameMap, final UMLSLanguageCode languageCode) {
         for (final Map.Entry<String, String> entry : conceptNameMap.entrySet()) {

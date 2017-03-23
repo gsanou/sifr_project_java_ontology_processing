@@ -8,3 +8,9 @@ target
 *.pdf
 *.txt
 *.xlsx
+*.zip
+*.bz2
+*.gz
+final/
+*.xml
+*.properties

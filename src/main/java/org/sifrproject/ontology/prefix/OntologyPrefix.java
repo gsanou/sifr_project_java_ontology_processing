@@ -25,11 +25,18 @@ public final class OntologyPrefix {
         if(prefixModel.get() ==null) {
             prefixModel.set(ModelFactory.createOntologyModel());
             try (InputStream prefixModelStream = OntologyPrefix.class.getResourceAsStream("/prefixes.ttl")) {
-                prefixModel.get().read(prefixModelStream, null, TURTLE.getName());
+                initialize(prefixModelStream);
             } catch (final IOException e) {
                 logger.error(e.getLocalizedMessage());
             }
         }
+    }
+
+    public static void initialize(final InputStream inputStream){
+        if(prefixModel.get()==null) {
+            prefixModel.set(ModelFactory.createOntologyModel());
+        }
+            prefixModel.get().read(inputStream, null, TURTLE.getName());
     }
 
 

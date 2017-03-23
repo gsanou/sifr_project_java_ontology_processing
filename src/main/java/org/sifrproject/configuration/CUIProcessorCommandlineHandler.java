@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Properties;
 
 import static org.sifrproject.configuration.CUIProcessorConfigurationConstants.*;
+import static org.sifrproject.configuration.ConfigurationConstants.CONFIG_OUTPUT_FILE_SUFFIX;
 
 public class CUIProcessorCommandlineHandler implements CommandlineHandler {
 
@@ -26,7 +27,10 @@ public class CUIProcessorCommandlineHandler implements CommandlineHandler {
 
     private static final String ADD_CODE_TO_PREFLABEL_OPTION = "cpl";
 
-    private static final String BY_DEFAULT = " by default.";
+    static final String BY_DEFAULT = " by default.";
+    static final String PRINTS_USAGE_AND_EXITS = "Prints usage and exits. ";
+    static final String IF_PRESENT_USE_THE_SPECIFIED_VALUE_AS_THE_FILENAME_SUFFIX_FOR_THE_OUTPUT = "if present, use the specified value as the filename suffix for the output ";
+    static final String WITH_OPTIONS_IN = "With OPTIONS in:";
 
 
     //Registering options for the posix command line parser
@@ -34,15 +38,15 @@ public class CUIProcessorCommandlineHandler implements CommandlineHandler {
 
     static {
         options = new Options();
-        options.addOption("h", false, "Prints usage and exits. ");
+        options.addOption("h", false, PRINTS_USAGE_AND_EXITS);
         options.addOption(HISTORY_NOTE_OPTION, true, "Supplies the skos:historyNote to attach to each class, pertaining to the " +
                 "origin of the data");
-        options.addOption(OUTPUT_FILE_SUFFIX_OPTION, true, "if present, use the specified value as the filename suffix for the output "
+        options.addOption(OUTPUT_FILE_SUFFIX_OPTION, true, IF_PRESENT_USE_THE_SPECIFIED_VALUE_AS_THE_FILENAME_SUFFIX_FOR_THE_OUTPUT
                 + "." + DEFAULT_OUTPUT_FILE_SUFFIX + BY_DEFAULT);
-        options.addOption(DISAMBIGUATE_CUI_OPTION, false,"If present, disambiguates ambiguous CUIs");
-        options.addOption(MATCH_MISSING_CUI_OPTION, false,"If present, tries to find missing CUI my matching prefLabel to all UMLS CUI descriptions");
-        options.addOption(SOURCE_LANGUAGE_OPTION,true,"The language of the ontology to process (ontologyFileOrUrl)...");
-        options.addOption(ADD_CODE_TO_PREFLABEL_OPTION,false,"Add code to prefLabels");
+        options.addOption(DISAMBIGUATE_CUI_OPTION, false, "If present, disambiguates ambiguous CUIs");
+        options.addOption(MATCH_MISSING_CUI_OPTION, false, "If present, tries to find missing CUI my matching prefLabel to all UMLS CUI descriptions");
+        options.addOption(SOURCE_LANGUAGE_OPTION, true, "The language of the ontology to process (ontologyFileOrUrl)...");
+        options.addOption(ADD_CODE_TO_PREFLABEL_OPTION, false, "Add code to prefLabels");
     }
 
 
@@ -55,7 +59,7 @@ public class CUIProcessorCommandlineHandler implements CommandlineHandler {
                 "ontologyFileOrUrl must point on an OWL ontology (TURTLE, XML/RDF)";
         //noinspection HardcodedFileSeparator
         formatter.printHelp("java -cp /path/to/jar org.sifrproject.cli.cui.OntologyCUIProcessor [OPTIONS] ontologyFileOrUrl ...",
-                "With OPTIONS in:", options,
+                WITH_OPTIONS_IN, options,
                 help, false);
     }
 
@@ -81,8 +85,8 @@ public class CUIProcessorCommandlineHandler implements CommandlineHandler {
      */
     private String getSourceModelPath() {
         String URL = "";
-        if(commandLine.getArgs().length > 0) {
-            URL =  commandLine.getArgs()[0];
+        if (commandLine.getArgs().length > 0) {
+            URL = commandLine.getArgs()[0];
         } else {
             printUsage();
             System.exit(1);
@@ -92,8 +96,8 @@ public class CUIProcessorCommandlineHandler implements CommandlineHandler {
 
     private String getTargetModelPath() {
         String URL = "";
-        if(commandLine.getArgs().length > 1) {
-            URL =  commandLine.getArgs()[1];
+        if (commandLine.getArgs().length > 1) {
+            URL = commandLine.getArgs()[1];
         } else {
             printUsage();
             System.exit(1);
@@ -120,23 +124,23 @@ public class CUIProcessorCommandlineHandler implements CommandlineHandler {
         final String outputFileSuffix = commandLine.getOptionValue(OUTPUT_FILE_SUFFIX_OPTION, DEFAULT_OUTPUT_FILE_SUFFIX);
         final String ontologyURL = getSourceModelPath();
         final String targetURL = getTargetModelPath();
-        properties.put(CUIProcessorConfigurationConstants.CONFIG_TARGET_ENDPOINT, targetURL);
+        properties.put(CONFIG_TARGET_ENDPOINT, targetURL);
         properties.put(CONFIG_SOURCE_ENDPOINT, ontologyURL);
         properties.put(CONFIG_OUTPUT_FILE_SUFFIX, outputFileSuffix);
 
-        if(commandLine.hasOption(DISAMBIGUATE_CUI_OPTION)){
+        if (commandLine.hasOption(DISAMBIGUATE_CUI_OPTION)) {
             properties.put(CONFIG_DISAMBIGUATE, "true");
         }
 
-        if(commandLine.hasOption(HISTORY_NOTE_OPTION)){
-            properties.put(HISTORY_NOTE,commandLine.getOptionValue(HISTORY_NOTE_OPTION));
+        if (commandLine.hasOption(HISTORY_NOTE_OPTION)) {
+            properties.put(HISTORY_NOTE, commandLine.getOptionValue(HISTORY_NOTE_OPTION));
         }
 
-        if(commandLine.hasOption(MATCH_MISSING_CUI_OPTION)){
-            properties.put(CONFIG_MATCH,"true");
+        if (commandLine.hasOption(MATCH_MISSING_CUI_OPTION)) {
+            properties.put(CONFIG_MATCH, "true");
         }
 
-        if(commandLine.hasOption(ADD_CODE_TO_PREFLABEL_OPTION)){
+        if (commandLine.hasOption(ADD_CODE_TO_PREFLABEL_OPTION)) {
             properties.put(CONFIG_ADD_CODE_TO_PREFLABEL, "true");
         }
 

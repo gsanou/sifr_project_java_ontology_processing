@@ -8,6 +8,7 @@ import org.sifrproject.stats.StatsHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -23,8 +24,7 @@ public abstract class AbstractOntologyProcessor implements OntologyProcessor {
         progressCount = new AtomicInteger(0);
     }
 
-    protected abstract void processSourceClass(final OntClass thisClass);
-    protected abstract void processTargetClass(final OntClass thisClass);
+
 
 
     private final StatsHandler ontologyStats;
@@ -39,11 +39,18 @@ public abstract class AbstractOntologyProcessor implements OntologyProcessor {
 
     protected static final Logger logger = LoggerFactory.getLogger(AbstractOntologyProcessor.class);
 
+
+    protected abstract void processSourceClass(final OntClass thisClass);
+    protected abstract void processTargetClass(final OntClass thisClass);
+    protected abstract void postProcess();
+    protected abstract void cleanUp() throws IOException;
+
+
     /**
      * Process the ontology classes to look for CUIs and TUIs
      */
-    @Override
-    public void processSourceOntology() {
+
+    protected void processSourceOntology() {
         final List<OntClass> classList = sourceDelegate.getClasses();
         totalClasses = classList.size();
         logger.info("Processing {} source classes...", totalClasses);
@@ -58,8 +65,7 @@ public abstract class AbstractOntologyProcessor implements OntologyProcessor {
     /**
      * Process the ontology classes to look for CUIs and TUIs
      */
-    @Override
-    public void processTargetOntology() {
+    protected void processTargetOntology() {
         final List<OntClass> classList = sourceDelegate.getClasses();
         totalClasses = classList.size();
         logger.info("Processing {} target classes...", totalClasses);

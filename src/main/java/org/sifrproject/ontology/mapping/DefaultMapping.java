@@ -13,12 +13,10 @@ public final class DefaultMapping implements Mapping, Comparable<Mapping>{
     }
 
     DefaultMapping(final String key) {
-        final String[] parts = key.split("_");
+        final String[] parts = key.split("\\|");
         sourceClass = parts[0];
         property = parts[1];
         targetClass = parts[2];
-
-
     }
 
     @Override
@@ -38,7 +36,7 @@ public final class DefaultMapping implements Mapping, Comparable<Mapping>{
 
     @Override
     public String toString() {
-        return sourceClass+"_"+property+"_"+targetClass;
+        return sourceClass+"|"+property+"|"+targetClass;
     }
 
     @SuppressWarnings("all")

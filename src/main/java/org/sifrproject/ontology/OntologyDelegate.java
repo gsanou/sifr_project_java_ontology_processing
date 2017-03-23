@@ -1,6 +1,7 @@
 package org.sifrproject.ontology;
 
 import com.hp.hpl.jena.ontology.OntClass;
+import com.hp.hpl.jena.ontology.OntModel;
 
 import java.util.Collection;
 import java.util.List;
@@ -25,5 +26,7 @@ public interface OntologyDelegate {
     Collection<String> getObjectsThroughRelation(final Collection<String> classURIs, final String propertyURI);
 
     String getOntologyName();
+
+    void appendModel(final OntModel ontModel);
 
 }

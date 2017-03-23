@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.sifrproject.configuration.CUIProcessorConfigurationConstants.*;
+import static org.sifrproject.configuration.ConfigurationConstants.*;
 
 /**
  * Hello world!
@@ -116,7 +117,7 @@ public final class OntologyCUIProcessor extends AbstractOntologyProcessor {
      * @param thisClass The current class to process
      * @return A collection of string containing the CUIs found
      */
-    @SuppressWarnings("OverlyComplexMethod")
+    @SuppressWarnings({"OverlyComplexMethod", "OverlyLongMethod"})
     private Collection<String> processCUIs(final RDFNode thisClass) {
 
         final Collection<String> cuis = new TreeSet<>();
@@ -129,6 +130,7 @@ public final class OntologyCUIProcessor extends AbstractOntologyProcessor {
         //We retrieve the code from the ontology following Annane et al. 2016
         final String code = codeFinder.getCode(thisClass.toString());
         if (code != null) {
+            incrementStatistic(CUIOntologyStats.UMLS_CODES_FOUND);
             //If there is a code found, we add it to the list so that it may be added as
             //skos:notation in the update step (postProcess)
             codesToAdd.put(thisClass.toString(), code);
@@ -139,7 +141,7 @@ public final class OntologyCUIProcessor extends AbstractOntologyProcessor {
         if (cuis.isEmpty()) {
             incrementStatistic(CUIOntologyStats.CLASSES_WITHOUT_CUI_STATISTIC);
             logger.debug("\tLooking for CUIs...");
-            cuis.addAll(findCUIs(thisClass.toString(), mappings));
+            cuis.addAll(findCUIs(thisClass.toString(), code, mappings));
 
             //If there are several CUIs we will compare them to the ones in UMLS and optionally disambiguate the CUIs (keep only one)
             // if the command line option is supplied (-dc). If -mc is supplied, even if there were no CUIs, we will
@@ -186,7 +188,7 @@ public final class OntologyCUIProcessor extends AbstractOntologyProcessor {
      * @return A collection of retrieved CUIs
      */
     @SuppressWarnings({"FeatureEnvy", "LawOfDemeter"})
-    private Collection<String> findCUIs(final String classURI, final Collection<Mapping> mappings) {
+    private Collection<String> findCUIs(final String classURI, final String code, final Collection<Mapping> mappings) {
 
         //Looking for CUIs through:
         logger.debug("\t\tIn altLabel...");
@@ -201,12 +203,21 @@ public final class OntologyCUIProcessor extends AbstractOntologyProcessor {
             targetDelegate.getCUIs(mappingClasses, cuis);
 
             if (cuis.isEmpty()) { // We couldn't find CUIs anywhere, so we write the class down for manual inspection
-                //noinspection SynchronizeOnNonFinalField
-                synchronized (noCUIConceptsWriter) {
-                    noCUIConceptsWriter.println(classURI);
-                    noCUIConceptsWriter.flush();
+
+                logger.debug("\t\tIn UMLS through code...");
+                cuis.addAll(umlsDelegate.getUMLSCUIs(code));
+
+
+                if(cuis.isEmpty()) {
+                    //noinspection SynchronizeOnNonFinalField
+                    synchronized (noCUIConceptsWriter) {
+                        noCUIConceptsWriter.println(classURI);
+                        noCUIConceptsWriter.flush();
+                    }
+                    incrementStatistic(CUIOntologyStats.CLASSES_REMAINING_WITHOUT_CUI_STATISTIC);
+                } else {
+                    incrementStatistic(CUIOntologyStats.CLASSES_WITH_CUI_THROUGH_CODE_STATISTIC);
                 }
-                incrementStatistic(CUIOntologyStats.CLASSES_REMAINING_WITHOUT_CUI_STATISTIC);
             } else {
                 incrementStatistic(CUIOntologyStats.CLASSES_WITH_CUI_IN_MAPPINGS_STATISTIC);
             }
@@ -223,7 +234,6 @@ public final class OntologyCUIProcessor extends AbstractOntologyProcessor {
     @SuppressWarnings("FeatureEnvy")
     private void compareCUIsToUMLS(final String code, final Collection<String> cuis) {
         if (code != null) {
-            incrementStatistic(CUIOntologyStats.UMLS_CODES_FOUND);
             final Collection<String> umlsCUIs = new TreeSet<>();
             umlsCUIs.addAll(umlsDelegate.getUMLSCUIs(code, UMLSLanguageCode.FRENCH));
             if (umlsCUIs.size() > cuis.size()) {
@@ -382,7 +392,7 @@ public final class OntologyCUIProcessor extends AbstractOntologyProcessor {
      * Update the source model by adding the new CUIs and TUIs
      */
     @Override
-    public void postProcess() {
+    protected void postProcess() {
         progressCount.set(0);
         final List<OntClass> sourceClasses = sourceDelegate.getClasses();
         totalClasses = cuisToAdd.size() + cuiAddedNotesToAdd.size() + tuisToAdd.size() +
@@ -407,8 +417,25 @@ public final class OntologyCUIProcessor extends AbstractOntologyProcessor {
     }
 
     @Override
-    public void cleanUp() throws IOException {
+    protected void cleanUp() throws IOException {
         termSimilarityRanker.release();
+    }
+
+    @Override
+    public void process() throws IOException {
+        /*The base class iterates over each source ontology class and calls processSourceClass, overridden above
+        * Please look at processSourceClass if you wish to modify this process*/
+        processSourceOntology();
+
+        /*
+         * Apply post processing steps, here we update the model to add the new information and remove what needs
+         * to be removed
+         */
+        postProcess();
+        /*
+         * We release acquired resources here, very important, otherwise the program will hang on a loose thread pool!
+         */
+        cleanUp();
     }
 
 
@@ -418,7 +445,9 @@ public final class OntologyCUIProcessor extends AbstractOntologyProcessor {
         //VisualVMTools.delayUntilReturn();
 
         final Properties properties = new Properties();
-        properties.load(OntologyCUIProcessor.class.getResourceAsStream("/cuiprocessor_config.properties"));
+        properties.load(OntologyCUIProcessor.class.getClassLoader().getResourceAsStream("./cuiprocessor_config.properties"));
+
+
 
         final CommandlineHandler commandlineHandler = new CUIProcessorCommandlineHandler();
         commandlineHandler.processCommandline(args, properties);
@@ -474,19 +503,8 @@ public final class OntologyCUIProcessor extends AbstractOntologyProcessor {
                 ontologyStats,
                 termSimilarityRanker
         );
-        /*The base class iterates over each source ontology class and calls processSourceClass, overridden above
-        * Please look at processSourceClass if you wish to modify this process*/
-        ontologyCUIProcessor.processSourceOntology();
 
-        /*
-         * Apply post processing steps, here we update the model to add the new information and remove what needs
-         * to be removed
-         */
-        ontologyCUIProcessor.postProcess();
-        /*
-         * We release acquired resources here, very important, otherwise the program will hang on a loose thread pool!
-         */
-        ontologyCUIProcessor.cleanUp();
+        ontologyCUIProcessor.process();
     }
 
 

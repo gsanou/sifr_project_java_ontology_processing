@@ -28,6 +28,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.sifrproject.configuration.CUIProcessorConfigurationConstants.*;
+import static org.sifrproject.configuration.ConfigurationConstants.*;
 
 /**
  * Hello world!
@@ -92,7 +93,7 @@ public final class OntologyReconciler extends AbstractOntologyProcessor {
     @Override
     protected void processSourceClass(final OntClass thisClass) {
         incrementStatistic(CUIOntologyStats.TOTAL_CLASS_COUNT_STATISTIC);
-        logger.debug(String.format("Looking for mappings: %s", thisClass));
+//        logger.debug(String.format("Looking for mappings: %s", thisClass));
         final Collection<String> cuis = findSourceCodes(thisClass);
         final double progress = getPercentProgress();
         //noinspection UseOfSystemOutOrSystemErr,HardcodedLineSeparator
@@ -216,7 +217,7 @@ public final class OntologyReconciler extends AbstractOntologyProcessor {
     }
 
     @Override
-    public void postProcess() {
+    protected void postProcess() {
 
     }
 
@@ -283,10 +284,15 @@ public final class OntologyReconciler extends AbstractOntologyProcessor {
                 mappingDelegate,
                 ontologyStats
         );
-        ontologyCUIProcessor.processSourceOntology();
-        ontologyCUIProcessor.postProcess();
-        ontologyCUIProcessor.cleanUp();
+
     }
 
 
+    @Override
+    public void process() throws IOException {
+        processSourceOntology();
+        processTargetOntology();
+        postProcess();
+        cleanUp();
+    }
 }

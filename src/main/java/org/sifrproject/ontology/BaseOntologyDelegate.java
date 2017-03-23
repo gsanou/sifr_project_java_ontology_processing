@@ -41,6 +41,11 @@ public class BaseOntologyDelegate implements OntologyDelegate {
     private static final Pattern CONTAINS_DOT_PATTERN = Pattern.compile("\\.");
     private static final Pattern URL_PATTERN = Pattern.compile("[^:]{2,6}:.*");
     private static final Pattern BZ2PAttern = Pattern.compile(".bz2");
+    @SuppressWarnings("HardcodedFileSeparator")
+    private static final String RDF_XML_ABBREV = "RDF/XML-ABBREV";
+
+    @SuppressWarnings("HardcodedFileSeparator")
+    private static final String RDF_XML = "RDF/XML";
 
     protected final OntModel model;
     protected List<OntClass> classes;
@@ -76,7 +81,7 @@ public class BaseOntologyDelegate implements OntologyDelegate {
             final String[] comps = CONTAINS_DOT_PATTERN.split(ontologyName);
             ontologyName = comps[0];
             comps[1] = BZ2PAttern.matcher(comps[1]).replaceAll("");
-            switch (comps[1]){
+            switch (comps[1]) {
                 case "ttl":
                     outputFormat = TURTLE;
                     break;
@@ -85,10 +90,41 @@ public class BaseOntologyDelegate implements OntologyDelegate {
                 case "xrdf":
                 default:
                     //noinspection HardcodedFileSeparator
-                    outputFormat= "RDF/XML-ABBREV";
+                    outputFormat = RDF_XML_ABBREV;
                     break;
             }
-            this.outputFileSuffix+="."+comps[1];
+            //this.outputFileSuffix += "." + comps[1];
+            //outputFormat = RDF_XML;
+            outputFormat = RDF_XML;
+            this.outputFileSuffix += ".owl";
+        }
+    }
+
+    BaseOntologyDelegate(final String outputFileName, final JedisPool jedisPool) {
+        model = ModelFactory.createOntologyModel();
+        loadPrefixes();
+
+        this.jedisPool = jedisPool;
+        outputFileSuffix = "";
+
+        if (outputFileName.contains(".")) {
+            final String[] comps = CONTAINS_DOT_PATTERN.split(outputFileName);
+            ontologyName = comps[0];
+            final Matcher matcher = BZ2PAttern.matcher(comps[1]);
+            comps[1] = matcher.replaceAll("");
+            switch (comps[1]) {
+                case "ttl":
+                    outputFormat = TURTLE;
+                    break;
+                case "xml":
+                case "owl":
+                case "xrdf":
+                default:
+                    //noinspection HardcodedFileSeparator
+                    outputFormat = RDF_XML_ABBREV;
+                    break;
+            }
+            outputFileSuffix += "." + comps[1];
         }
     }
 
@@ -141,6 +177,11 @@ public class BaseOntologyDelegate implements OntologyDelegate {
         return ontologyName;
     }
 
+    @Override
+    public void appendModel(final OntModel ontModel) {
+        model.add(ontModel);
+    }
+
 
     /**
      * Output the enriched model to a file in the running directory of the project with "_enriched" appended to the
@@ -148,8 +189,7 @@ public class BaseOntologyDelegate implements OntologyDelegate {
      */
     @Override
     public void writeModel() {
-        final String outputModelFileName = ontologyName + "_" + outputFileSuffix;
-
+        final String outputModelFileName = ontologyName + outputFileSuffix;
         try {
             final OutputStream outputModelStream = new FileOutputStream(outputModelFileName);
             model.write(outputModelStream, outputFormat);
@@ -165,14 +205,13 @@ public class BaseOntologyDelegate implements OntologyDelegate {
 
     @Override
     public void addSkosProperty(final String classURI, final String value, final String propertyName, final String languageCode) {
-        addLiteralStatement(classURI, model.expandPrefix("skos:" + propertyName), value,languageCode);
+        addLiteralStatement(classURI, model.expandPrefix("skos:" + propertyName), value, languageCode);
     }
 
     @Override
     public void addSkosProperty(final String classURI, final String value, final String propertyName) {
-        addLiteralStatement(classURI, model.expandPrefix("skos:" + propertyName),value);
+        addLiteralStatement(classURI, model.expandPrefix("skos:" + propertyName), value);
     }
-
 
 
     @Override
@@ -194,7 +233,7 @@ public class BaseOntologyDelegate implements OntologyDelegate {
     public void addLiteralStatement(final String sourceURI, final String propertyURI, final String literal, final String languageCode) {
         final OntResource subject = getOrCreateResource(sourceURI);
         final OntProperty property = getOrCreateProperty(propertyURI);
-        model.add(subject, property, model.createLiteral(literal,languageCode));
+        model.add(subject, property, model.createLiteral(literal, languageCode));
     }
 
     @Override

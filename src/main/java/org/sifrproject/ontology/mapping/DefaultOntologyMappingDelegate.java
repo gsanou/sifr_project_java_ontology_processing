@@ -31,7 +31,7 @@ public class DefaultOntologyMappingDelegate implements OntologyMappingDelegate {
     private static final String MAPPING_RELATEDMATCH_PROPERTY_URI = OntologyPrefix.getURI("skos:relatedMatch");
     private static final String MAPPING_BROADMATCH_PROPERTY_URI = OntologyPrefix.getURI("skos:broadMatch");
 
-    private static final String MAPPING_CACHE_PREFIX = "m_";
+    private static final String MAPPING_CACHE_PREFIX = "m|";
 
 
     private final OntModel mappingModel;
@@ -70,8 +70,8 @@ public class DefaultOntologyMappingDelegate implements OntologyMappingDelegate {
 
         OntClass object = null;
         if (targetClass != null) {
-            object = mappingModel.createClass(sourceClass);
-            key+="_"+sourceClass;
+            object = mappingModel.createClass(targetClass);
+            key+="|"+targetClass;
         }
         final List<Mapping> mappings = new ArrayList<>();
         try (Jedis jedis = jedisPool.getResource()) {
