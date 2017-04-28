@@ -1,10 +1,13 @@
 package org.sifrproject.ontology;
 
 
+import com.hp.hpl.jena.enhanced.EnhGraph;
+import com.hp.hpl.jena.graph.NodeFactory;
 import com.hp.hpl.jena.ontology.OntClass;
 import com.hp.hpl.jena.ontology.OntModel;
 import com.hp.hpl.jena.ontology.OntProperty;
 import com.hp.hpl.jena.ontology.OntResource;
+import com.hp.hpl.jena.ontology.impl.OntClassImpl;
 import com.hp.hpl.jena.rdf.model.*;
 import com.hp.hpl.jena.util.iterator.ExtendedIterator;
 import org.sifrproject.cli.OWLOntologyCleaner;
@@ -35,8 +38,11 @@ public class BaseOntologyDelegate implements OntologyDelegate {
 
     private static final Logger logger = LoggerFactory.getLogger(BaseOntologyDelegate.class);
 
+    static final String SKOS_CONCEPT = "skos:Concept";
     protected static final String SKOS_CORE_PREF_LABEL_PROPERTY = OntologyPrefix.getURI(OWLOntologyCleaner.SKOS_PREF_LABEL);
     protected static final String SKOS_ALT_LABEL_PROPERTY = OntologyPrefix.getURI("skos:altLabel");
+    private static final String SKOS_CONCEPT_URI = OntologyPrefix.getURI(SKOS_CONCEPT);
+    private static final String RDF_TYPE_PROPERTY = OntologyPrefix.getURI("rdf:type");
 
     private static final Pattern CONTAINS_DOT_PATTERN = Pattern.compile("\\.");
     private static final Pattern URL_PATTERN = Pattern.compile("[^:]{2,6}:.*");
@@ -46,6 +52,7 @@ public class BaseOntologyDelegate implements OntologyDelegate {
 
     @SuppressWarnings("HardcodedFileSeparator")
     private static final String RDF_XML = "RDF/XML";
+
 
     protected final OntModel model;
     protected List<OntClass> classes;
@@ -168,6 +175,16 @@ public class BaseOntologyDelegate implements OntologyDelegate {
             logger.info("Loading class list in memory...");
             final ExtendedIterator<OntClass> ontClassExtendedIterator = model.listNamedClasses();
             classes = ontClassExtendedIterator.toList();
+        }
+        if(classes.isEmpty()){
+            classes = new ArrayList<>();
+            final StmtIterator skosConceptIterator = model.listStatements(null,getOrCreateProperty(RDF_TYPE_PROPERTY),getOrCreateResource(SKOS_CONCEPT_URI));
+            while (skosConceptIterator.hasNext()) {
+                final Statement next = skosConceptIterator.next();
+                final String classURI = next.getSubject().getURI();
+                classes.add(new OntClassImpl(NodeFactory.createURI(classURI), new EnhGraph(null,null)));
+            }
+
         }
         return Collections.unmodifiableList(classes);
     }

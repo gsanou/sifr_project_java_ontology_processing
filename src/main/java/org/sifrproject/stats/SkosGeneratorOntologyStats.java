@@ -8,8 +8,8 @@ public final class SkosGeneratorOntologyStats extends OntologyStats{
 
 
     @SuppressWarnings("HardcodedFileSeparator")
-    public SkosGeneratorOntologyStats(final String dctionaryFile) {
-        super(dctionaryFile);
+    public SkosGeneratorOntologyStats(final String dictionaryFile) {
+        super(dictionaryFile.split("\\.")[0]);
         registerStatistic(TOTAL_CLASS_COUNT_STATISTIC,"# Classes");
     }
 }

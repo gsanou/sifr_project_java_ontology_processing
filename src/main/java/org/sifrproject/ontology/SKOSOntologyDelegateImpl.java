@@ -14,7 +14,7 @@ public final class SKOSOntologyDelegateImpl extends BaseOntologyDelegate impleme
     private static final Logger logger = LoggerFactory.getLogger(SKOSOntologyDelegateImpl.class);
 
     private static final String SKOS_CONCEPT_SCHEME_URI = OntologyPrefix.getURI("skos:ConceptScheme");
-    private static final String SKOS_CONCEPT_URI = OntologyPrefix.getURI("skos:Concept");
+    private static final String SKOS_CONCEPT_URI = OntologyPrefix.getURI(SKOS_CONCEPT);
     private static final String SKOS_BROADER_URI = OntologyPrefix.getURI("skos:broader");
 
     private static final String SKOS_IN_SCHEME = OntologyPrefix.getURI("skos:inScheme");
@@ -60,6 +60,6 @@ public final class SKOSOntologyDelegateImpl extends BaseOntologyDelegate impleme
 
     @Override
     public void setTopConcept(final String topConceptURI, final String ontologyURI){
-        addStatement(ontologyURI,SKOS_HAS_TOP_CONCEPT_URI,ontologyURI);
+        addStatement(ontologyURI,SKOS_HAS_TOP_CONCEPT_URI,topConceptURI);
     }
 }

@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Properties;
 
 import static org.sifrproject.configuration.ConfigurationConstants.CONFIG_OUTPUT_FILE_SUFFIX;
-import static org.sifrproject.configuration.SKOSGeneratorConfigurationConstants.CONFIG_LANGUAGE;
+import static org.sifrproject.configuration.SKOSGeneratorConfigurationConstants.*;
 
 public class SKOSGeneratorCommandlineHandler implements CommandlineHandler {
 
@@ -21,6 +21,12 @@ public class SKOSGeneratorCommandlineHandler implements CommandlineHandler {
     private static final String LANGUAGE_OPTION = "l";
     private static final String DEFAULT_LANGUAGE = "en";
 
+    private static final String DICTIONARY_OPTION = "d";
+    private static final String CORPUS_RAW_OPTION = "cr";
+    private static final String CORPUS_STD_OPTION = "cs"; //-cs
+    private static final String CORPUS_ADAPTED_OPTION = "a"; //-a
+    private static final String CORPUS_MOST_FREQUENT_CODE_OPTION = "mfc"; //-mfc
+
 
     private static final String BY_DEFAULT = CUIProcessorCommandlineHandler.BY_DEFAULT;
 
@@ -31,6 +37,12 @@ public class SKOSGeneratorCommandlineHandler implements CommandlineHandler {
     static {
         options = new Options();
         options.addOption("h", false, CUIProcessorCommandlineHandler.PRINTS_USAGE_AND_EXITS);
+        options.addOption(DICTIONARY_OPTION,false,"Include dictionary labels");
+        options.addOption(CORPUS_RAW_OPTION,false,"Include raw corpus lines");
+        options.addOption(CORPUS_STD_OPTION,false,"Include standardised corpus descriptions");
+        options.addOption(CORPUS_ADAPTED_OPTION,false,"Smart selection between raw and standardised text from the " +
+                "corpus, requires -"+CORPUS_RAW_OPTION+" and -"+CORPUS_STD_OPTION+" to be enabled");
+        options.addOption(CORPUS_MOST_FREQUENT_CODE_OPTION,false,"Include text only for the most frequent codes, when several text segments share the same code");
         options.addOption(LANGUAGE_OPTION,true,"Language of the dictionary (ISO 2 letter code)");
         options.addOption(OUTPUT_FILE_SUFFIX_OPTION, true, CUIProcessorCommandlineHandler.IF_PRESENT_USE_THE_SPECIFIED_VALUE_AS_THE_FILENAME_SUFFIX_FOR_THE_OUTPUT
                 + "." + DEFAULT_OUTPUT_FILE_SUFFIX + BY_DEFAULT);
@@ -66,10 +78,7 @@ public class SKOSGeneratorCommandlineHandler implements CommandlineHandler {
         }
     }
 
-    /**
-     * Load the input ontology to process in a Jena OntModel, supports local uncompressed files, bziped/gzipped files and
-     * remote files over http
-     */
+
     private String getDictionaryPath() {
         String URL = "";
         if(commandLine.getArgs().length > 0) {
@@ -77,6 +86,15 @@ public class SKOSGeneratorCommandlineHandler implements CommandlineHandler {
         } else {
             printUsage();
             System.exit(1);
+        }
+        return URL;
+    }
+
+
+    private String getCorpusPath() {
+        String URL = "";
+        if(commandLine.getArgs().length > 1) {
+            URL =  commandLine.getArgs()[1];
         }
         return URL;
     }
@@ -101,8 +119,42 @@ public class SKOSGeneratorCommandlineHandler implements CommandlineHandler {
         final String outputFileSuffix = commandLine.getOptionValue(OUTPUT_FILE_SUFFIX_OPTION, DEFAULT_OUTPUT_FILE_SUFFIX);
         final String language = commandLine.getOptionValue(LANGUAGE_OPTION,DEFAULT_LANGUAGE);
         final String dictionaryPath = getDictionaryPath();
-        properties.put(SKOSGeneratorConfigurationConstants.CONFIG_DICTIONARY_PATH, dictionaryPath);
+        final String corpusPath = getCorpusPath();
+        properties.put(CONFIG_DICTIONARY_PATH, dictionaryPath);
+        properties.put(CONFIG_CORPUS_PATH, corpusPath);
         properties.put(CONFIG_OUTPUT_FILE_SUFFIX, outputFileSuffix);
         properties.put(CONFIG_LANGUAGE,language);
+
+        if(commandLine.hasOption(DICTIONARY_OPTION)){
+            properties.put(CONFIG_DICTIONARY,"true");
+        }
+
+
+        if(commandLine.hasOption(CORPUS_STD_OPTION)){
+            properties.put(CONFIG_CORPUS_STD,"true");
+        }
+
+
+        if(commandLine.hasOption(CORPUS_RAW_OPTION)){
+            properties.put(CONFIG_CORPUS_RAW,"true");
+        }
+
+        if(commandLine.hasOption(CORPUS_ADAPTED_OPTION)){
+            if(!commandLine.hasOption(CORPUS_STD_OPTION) || ! commandLine.hasOption(CORPUS_RAW_OPTION)){
+                logger.error("-a requires both -cr and -cs to be enabled");
+                printUsage();
+                System.exit(1);
+            }
+            if(commandLine.hasOption(CORPUS_MOST_FREQUENT_CODE_OPTION)){
+                logger.error("-a is incompatible with -mfc");
+                printUsage();
+                System.exit(1);
+            }
+            properties.put(CONFIG_CORPUS_ADAPTED, "true");
+        }
+
+        if(commandLine.hasOption(CORPUS_MOST_FREQUENT_CODE_OPTION)){
+            properties.put(CONFIG_MOST_FREQUENT_CODE, "true");
+        }
     }
 }
