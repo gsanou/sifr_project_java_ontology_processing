@@ -16,16 +16,16 @@ https://github.com/owlcs/owlapi
 http://www.lirmm.fr/sifr/
 
 
-#CUI and semantic group enrichment using interportal mappings
+# CUI and semantic group enrichment using interportal mappings
 
-##Requirements
+## Requirements
   1. The source ontologies
   2. The ttl file for the mappings, found here under data/
   3. The target ontologies for the mappings
   4. A redis server running on the same machine on its default port
   5. Access to an SQL version of the UMLS Meta-thesaurus 
 
-##Steps
+## Steps
 
   1. Create a TDB repository with the source ontology files
   2. Create a TDB repository with the target ontology files
